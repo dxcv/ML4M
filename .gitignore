@@ -1,6 +1,7 @@
-# Custom ignore / log / txt
+# Custom ignore / log / txt / html
 *.log
 *.txt
+*.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
