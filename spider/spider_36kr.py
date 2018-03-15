@@ -21,7 +21,7 @@ class Spider36KR(object):
 
     def __search_news_from_web(self, search_word, page=1):
         """
-        根据关键词search_word和页数标记page，使用36kr XHR API查询新闻。
+        根据关键词search_word和页数索引page，使用36kr XHR API查询新闻。
         探索得知：
             1、此API一次查询条数由per_page参数控制，最多300条。
             2、没有排序参数，默认排序为权重排序，并非发布时间倒序排序
@@ -30,6 +30,8 @@ class Spider36KR(object):
         """
         url = 'http://36kr.com/api/search/entity-search?page=%d&per_page=300&keyword=%s&entity_type=post&_=%d' % (page, search_word, int(time.time()))
         debug('准备请求 %s' % url)
+
+        # 伪造请求头
         headers = {
             # 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
             # 'Accept-Encoding': 'gzip, deflate',
@@ -42,40 +44,49 @@ class Spider36KR(object):
             # 'Upgrade-Insecure-Requests': '1',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
         }
+
         r = requests.get(url, headers=headers)
-        # r = requests.get(url)
-        # debug(r.headers)
         content = r.content
         debug('返回包体长度：%d' % len(content))
         content = json.loads(content)
-        converted_news_list = []
+
+        # 没有item参数，说明翻页超底了，没有新闻返回
         if 'items' not in content['data']:
-            return converted_news_list
-        news_list = content['data']['items']
-        for news in news_list:
-            converted_news_list.append(self.__covert_news_formart(news))
-        return converted_news_list
+            return []
+        else:
+            return content['data']['items']
 
     def __search_all_new_news_from_web(self, search_word, last_news_id_from_db):
-        has_new_news = True
+        """
+        抓取所有新的新闻。
+        输入：搜索词，数据库中最大的news_id
+        返回：新的新闻的list
+        """
         page = 1
         new_news_list = []
-        while has_new_news:
+        while True:
+            # 逐页请求XHR API，获取新闻
             news_list = self.__search_news_from_web(search_word, page)
+            page += 1
             debug('len(news_list) = %d' % len(news_list))
+
+            # 接口没返回新闻，说明翻页超底了
             if len(news_list) == 0:
                 break
+
+            # 判断新闻是否是新的，通过news_id是否大于数据库中最大的news_id判断
             for news in news_list:
-                if news['news_id'] > last_news_id_from_db:
-                    new_news_list.append(news)
-            debug('len(new_news_list) = %d' % len(new_news_list))
-            self.__insert_news_list_to_db(search_word, new_news_list)
-            new_news_list = []
-            page += 1
+                # debug(news)
+                if news['id'] > last_news_id_from_db:
+                    # 处理并插入新闻数据的字段
+                    new_news_list.append(self.__covert_news_formart(news))
+
+        debug('len(new_news_list) = %d' % len(new_news_list))
         return new_news_list
 
     def __covert_news_formart(self, news):
         """
+        去除新闻数据的无用字段，保留或转换成目标字段。
         原字段：
             {
                 id: 5099726,
@@ -124,11 +135,12 @@ class Spider36KR(object):
                 _score: 18.295677
             },
         目标字段：
-            news_site
-            news_id
-            title
-            publish_time
-            content
+            news_site：新闻站点，这里固定是36kr
+            news_id：新闻id
+            title：新闻标题
+            publish_time：发布时间
+            content：亮点摘要汇总
+            full_content：新闻全文，无法从接口获取，必须再抓取文章页，暂时为空
         """
         # debug(str(news).encode('utf-8'))
         converted_news = {}
@@ -136,54 +148,87 @@ class Spider36KR(object):
         converted_news['news_id'] = news['id']
         converted_news['title'] = news['title']
         converted_news['publish_time'] = news['published_at']
+        converted_news['full_content'] = ''
+
+        # 合并亮点摘要
         if 'content' in news['highlight']:
             converted_news['content'] = '|'.join(c for c in news['highlight']['content'])
         else:
             converted_news['content'] = news['highlight']['title']
+
         return converted_news
 
     def __insert_news_list_to_db(self, search_word, news_list):
-        f = open('36kr_%s.txt' % search_word, 'a+', encoding='utf-8')
-        for news in news_list:
-            f.write(str(news))
-            f.write('\n')
-        f.close()
+        """
+        把新的新闻插入数据库，目前只能以JSON String形式保存在文本文件
+        TODO: 实现可选存入文本或MongoDB
+        """
+        # 文本文件路径
+        txtfile = '../database/36kr_%s.txt' % search_word
+
+        # 读取原先的新闻数据
+        # 若文件不存在，或内容为空导致JSON解析失败，依然可以赋值空列表
+        # TODO: 增强容错性，保护原数据
+        all_news_list = []
+        if os.path.exists(txtfile):
+            with open(txtfile, 'r', encoding='utf-8') as f:
+                all_news_list = json.loads(f.read())
+
+        # 合并原新闻和本次抓取的新的新闻
+        all_news_list = all_news_list + news_list
+
+        # 转换为JSON字符串，覆盖写入文本文件
+        # TODO: 增强容错性，保护原数据
+        try:
+            news = json.dumps(all_news_list)
+            f = open(txtfile, 'w+', encoding='utf-8')
+            f.write(news)
+        except Exception as e:
+            # raise e
+            return False
+        finally:
+            f.close()
+
         return True
 
     def __get_last_news_from_db(self, search_word):
-        db_file = '36kr_%s.txt' % search_word
-        if not os.path.exists(db_file):
-            last_news_id_from_db = 0
-            return last_news_id_from_db
-        f = open('36kr_%s.txt' % search_word, 'r', encoding='utf-8')
-        db_news_list = f.read().split('\n')
-        f.close()
+        """
+        获取数据库中最大的新闻ID
+        """
+        txtfile = '../database/36kr_%s.txt' % search_word
+        last_news_id_from_db = 0
+        news_list = []
 
-        # json.loads无法解析单引号，只能用eval了。
-        db_news_id_list = []
-        for news in db_news_list[0:]:
-            if news == '':
-                continue
-            news = eval(news)
-            db_news_id_list.append(news['news_id'])
-        if len(db_news_id_list) > 0:
-            last_news_id_from_db = max(db_news_id_list)
-        else:
-            last_news_id_from_db = 0
+        # 文本文件不存在，说明之前从未抓取过数据，直接返回0
+        if not os.path.exists(txtfile):
+            return last_news_id_from_db
+
+        with open(txtfile, 'r', encoding='utf-8') as f:
+            news_list = json.loads(f.read())
+
+        # 计算news_id最大值
+        last_news_id_from_db = max(news['news_id'] for news in news_list)
+        # last_news_id_from_db = max(dict_list, key=lambda x: x['news_id'])
         return last_news_id_from_db
 
     def update_news_by_keyword(self, keyword):
+
+        # 从数据库获取已有新闻的最大ID
         last_news_id_from_db = self.__get_last_news_from_db(keyword)
         debug('last_news_id_from_db = %s' % last_news_id_from_db)
-        # new_news_list = self.__search_all_new_news_from_web(keyword, last_news_id_from_db)
-        # self.__insert_news_list_to_db(keyword, new_news_list)
-        self.__search_all_new_news_from_web(keyword, last_news_id_from_db)
-        return True
+
+        # 抓取新的新闻，即news_id大于原有最大news_id的
+        new_news_list = self.__search_all_new_news_from_web(keyword, last_news_id_from_db)
+
+        # 把新的新闻存入数据库
+        ret = self.__insert_news_list_to_db(keyword, new_news_list)
+        return ret
 
 
 if __name__ == '__main__':
     set_log(DEBUG)
     site = Spider36KR()
     keyword_list = ['百度', '网易', '迅雷', '区块链', 'EOS']
+    keyword_list = ['EOS']
     for keyword in keyword_list[0:]:
         site.update_news_by_keyword(keyword)
