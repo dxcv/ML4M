@@ -7,6 +7,7 @@ import time
 import json
 import os
 import sys
+import re
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
 from common.log import *
 
@@ -142,12 +143,18 @@ class Spider36KR(object):
             content：亮点摘要汇总
             full_content：新闻全文，无法从接口获取，必须再抓取文章页，暂时为空
         """
-        # debug(str(news).encode('utf-8'))
+
+        # 过滤特殊字符
+        # 蛋疼的是，Unicode有很多奇葩字符，不可视，不被聚类，得单独过滤
+        # 比如\u200b，U+200B: ZERO WIDTH SPACE
+        # 在Python和Unicode character property中，U+200B不被认为是空格字符，因此不会被\s或strip过滤
+        # 参考：https://bugs.python.org/issue13391
+        filter_char = '[\s\"\'\{\}\[\]\(\)]'
         converted_news = {}
         converted_news['news_site'] = '36kr'
         converted_news['news_id'] = news['id']
-        converted_news['title'] = news['title']
-        converted_news['publish_time'] = news['published_at']
+        converted_news['title'] = re.sub(filter_char, '', news['title'])
+        converted_news['publish_time'] = re.sub(filter_char, '', news['published_at'])
         converted_news['full_content'] = ''
 
         # 合并亮点摘要
@@ -155,6 +162,7 @@ class Spider36KR(object):
             converted_news['content'] = '|'.join(c for c in news['highlight']['content'])
         else:
             converted_news['content'] = news['highlight']['title']
+        converted_news['content'] = re.sub(filter_char, '', converted_news['content'])
 
         return converted_news
 
