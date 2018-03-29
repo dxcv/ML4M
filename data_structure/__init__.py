@@ -38,8 +38,8 @@ class DataStructure(object):
 
         # 把Date字段处理为日期
         # coin_data = coin_data.assign(Date=pd.to_datetime(coin_data['Date']))  # cost 0.1s
-        # coin_data['Date'] = coin_data['Date'].apply(lambda x: pd.Period(x, freq='D'))  # cost 0.2s
-        coin_data['Date'] = coin_data['Date'].apply(lambda x: pd.Timestamp(x, freq='D'))  # cost 0.2s
+        coin_data['Date'] = coin_data['Date'].apply(lambda x: pd.Period(x, freq='D'))  # cost 0.2s
+        # coin_data['Date'] = coin_data['Date'].apply(lambda x: pd.Timestamp(x, freq='D'))  # cost 0.2s
         # coin_data['Date'] = coin_data['Date'].apply(lambda x: pd.to_datetime(coin_data['Date']))  # cost 12s
         debug(coin_data.head())
         debug(coin_data.dtypes)
@@ -85,25 +85,90 @@ class DataStructure(object):
         debug(news_data.dtypes)
 
         # 把Date字段处理为日期
-        news_data['publish_time'] = news_data['publish_time'].apply(lambda x: pd.Timestamp(x, freq='D'))
-        # news_data['publish_time'] = news_data['publish_time'].apply(lambda x: pd.Period(x, freq='D'))
+        # news_data['publish_time'] = news_data['publish_time'].apply(lambda x: pd.Timestamp(x, freq='D'))
+        news_data['publish_time'] = news_data['publish_time'].apply(lambda x: pd.Period(x, freq='D'))
 
         # 创建索引
-        news_data.set_index(['publish_time'], inplace=True)
-        news_data = news_data.sort_index(axis=0, ascending=True)
+        # news_data.set_index(['publish_time'], inplace=True)
+        # news_data = news_data.sort_index(axis=0, ascending=True)
         debug(news_data.head())
         debug(news_data.dtypes)
 
         return news_data
 
-    def merge_data(self):
-        return 'a pd.DataFrame'
+    @staticmethod
+    def merge_data(coin_data, news_data):
+        """
+        合并数据货币和新闻数据。
+        输入：数据货币DataFrame、新闻数据DataFrame
+        输出：合并、处理后的DataFrame
+        """
+        news_data = news_data.groupby('publish_time').size().to_frame(name='counts')
+        debug(news_data.tail(10))
+        debug(news_data.dtypes)
+
+        # 用Merge等同于Join
+        result_df = pd.merge(coin_data, news_data, how='left', left_index=True, right_index=True)
+        result_df = result_df.loc[:, ['Close', 'Volume', 'counts']]
+        # result_df = result_df.loc[:, ['Close', 'Volume', 'counts']]
+        result_df = result_df.fillna(value={'counts': 0})
+        debug(result_df.tail(10))
+        return result_df
+
+    @staticmethod
+    def draw_line(result_df):
+        # result_df['counts'] = result_df['counts'].apply(lambda x: x * 10)
+        ax = result_df.plot(kind='line', y='Close', label='Close', color='DarkBlue')
+        ax = result_df.plot(kind='line', y='counts', label='counts', secondary_y=True, color='LightGreen', ax=ax)
+        # result_df = result_df.cumsum()
+        # print(result_df)
+        # plt.figure()
+        # result_df.plot()
+        plt.show()
 
 
 if __name__ == '__main__':
-    set_log(DEBUG)
+    set_log(INFO)
     from data_structure import DataStructure as ds
-    coinmarketcap_html_file = '../database/coinmarketcap_eos_20170101_20180314.html'
+    coinmarketcap_html_file = '../database/coinmarketcap_eos_20170101_20180327.html'
     coin_data = ds.handle_coinmarketcap(coinmarketcap_html_file)
-    spider_36kr_data_file = '../database/36kr_EOS.txt'
+    # spider_36kr_data_file = '../database/36kr_EOS.txt'
+    spider_36kr_data_file = '../database/36kr_区块链.txt'
     news_data = ds.handle_36kr(spider_36kr_data_file)
+    result_df = ds.merge_data(coin_data, news_data)
+    ds.draw_line(result_df)
+
+    from machine_learning.kNN import kNN
+
+    result_df = kNN.autoNorm(result_df)
+    print(result_df)
+
+    result_df = result_df.reset_index(drop=True)
+    result_df['Close_change'] = 'UP'
+    for i in range(1, len(result_df), 1):
+        result_df.loc[i, 'Close_change'] = 'UP' if result_df.loc[i, 'Close'] > result_df.loc[i - 1, 'Close'] else 'DOWN'
+    result_df.set_index(['Close_change'], inplace=True)
+    print(result_df)
+
+    hoRatio = 0.5
+    numTestVecs = int(hoRatio * len(result_df))
+    errorCount = 0
+    for i in range(numTestVecs):
+        inX_lable = kNN.classify0(result_df[i:i + 1], result_df[0:], 10)
+        # info('Point %d, correct_label=%s, kNN_label=%s' % (i, inX_lable, result_df.iloc[i, :].name))
+        # debug(pd.Timestamp('now'))
+        if inX_lable != result_df.iloc[i, :].name:
+            errorCount += 1
+    info('numTestVecs: %d' % numTestVecs)
+    info('errorCount: %d' % errorCount)
+    info('errorRate: %f' % float(errorCount / numTestVecs))
+
+    price_up = result_df.loc[result_df.index == 'UP']
+    price_down = result_df.loc[result_df.index == 'DOWN']
+
+    ax = price_up.plot.scatter(
+        x='Volume', y='counts', label='price_up', color='DarkBlue')
+    ax = price_down.plot.scatter(
+        x='Volume', y='counts', label='price_down', color='LightGreen', ax=ax)
+
+    plt.show()
