@@ -26,18 +26,18 @@ start_date = '20170101'
 end_date = time.strftime('%Y%m%d')
 url = 'https://coinmarketcap.com/currencies/%s/historical-data/?start=%s&end=%s' % (coin, start_date, end_date)
 
-if os.path.isfile('coinmarketcap_%s_%s_%s.html' % (coin, start_date, end_date)):
+if os.path.isfile('../database/coinmarketcap_%s_%s_%s.html' % (coin, start_date, end_date)):
     print('data file exists')
     pass
 else:
     r = requests.get(url)
-    with open('coinmarketcap_%s_%s_%s.html' % (coin, start_date, end_date), 'w', encoding='utf-8') as f:
+    with open('../database/coinmarketcap_%s_%s_%s.html' % (coin, start_date, end_date), 'w', encoding='utf-8') as f:
         f.write(r.text)
 
 # get market info for bitcoin from the start of 2016 to the current day
 # bitcoin_market_info = pd.read_html("https://coinmarketcap.com/currencies/bitcoin/historical-data/?start=20130428&end="+time.strftime("%Y%m%d"))[0]
 # bitcoin_market_info = pd.read_html("https://coinmarketcap.com/currencies/eos/historical-data/?start=20180210&end="+time.strftime("%Y%m%d"))[0]
-bitcoin_market_info = pd.read_html('coinmarketcap_%s_%s_%s.html' % (coin, start_date, end_date))[0]
+bitcoin_market_info = pd.read_html('../database/coinmarketcap_%s_%s_%s.html' % (coin, start_date, end_date))[0]
 # print(type(bitcoin_market_info))
 # print(bitcoin_market_info)
 
@@ -115,20 +115,21 @@ s = [{'news_site': '36kr', 'news_id': 5116563}, {'news_site': '36kr', 'news_id':
 # print(json.dumps(s))
 # s = [{"col 1":"a","col 2":"b"}, {"col 1":"c","col 2":"d"}]
 n = []
-with open('36kr_EOS.txt', 'r', encoding='utf-8') as f:
-    for line in f:
+# with open('../database/36kr_EOS.txt', 'r', encoding='utf-8') as f:
+    # for line in f:
         # print(line, end='')
         # print(line)
         # print(type(line))
         # l = f.readline()
         # print(l)
         # l = l.strip()
-        n.append(eval(line))
-print(len(n))
+        # n.append(eval(line))
+# print(len(n))
 # s = "{'news_site': '36kr', 'news_id': 5116563}"
 # print(json.loads(s.replace('\'', '\"')))
 # print(json.dumps(s))
-news = pandas.read_json(json.dumps(n), orient='records', typ='frame')
+with open('../database/36kr_EOS.txt', 'r', encoding='utf-8') as f:
+    news = pandas.read_json(f.read(), orient='records', typ='frame')
 # print(news)
 # print(len(news))
 # print(news.loc[:, ['news_id', 'publish_time', 'title']])
@@ -137,8 +138,8 @@ news = pandas.read_json(json.dumps(n), orient='records', typ='frame')
 # print(bitcoin_market_info.head())
 
 print(pd.Period('2018-01-30T09:15:17+08:00', freq='D'))
-news = news.loc[:, ['news_id', 'publish_time']]
-news = news.loc[:, ['publish_time', 'news_id']]
+# news = news.loc[:, ['news_id', 'publish_time']]
+news = news.loc[:, ['publish_time', 'news_id', 'content']]
 news['publish_time'] = news['publish_time'].apply(lambda x: pd.Period(x, freq='D'))
 # pd.Period(news['publish_time'], freq='D')
 # lambda x: map(int, df[(df[0]==x[0])&(df[1]==x[1])].count() <= 1), axis=1
