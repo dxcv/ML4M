@@ -161,8 +161,11 @@ class Spider36KR(object):
         if 'content' in news['highlight']:
             converted_news['content'] = '|'.join(c for c in news['highlight']['content'])
         else:
-            converted_news['content'] = news['highlight']['title']
-        converted_news['content'] = re.sub(filter_char, '', converted_news['content'])
+            # 没有['highlight']['content']，则用['highlight']['title'][0]
+            converted_news['content'] = news['highlight']['title'][0]
+            # 简单粗暴用尖括号判断过滤HTML标签
+            converted_news['content'] = re.sub(r'<.*?>', '', converted_news['content'])
+            converted_news['content'] = re.sub(filter_char, '', converted_news['content'])
 
         return converted_news
 
@@ -237,6 +240,5 @@ if __name__ == '__main__':
     set_log(DEBUG)
     site = Spider36KR()
     keyword_list = ['百度', '网易', '迅雷', '区块链', 'EOS']
-    keyword_list = ['EOS']
     for keyword in keyword_list[0:]:
         site.update_news_by_keyword(keyword)
