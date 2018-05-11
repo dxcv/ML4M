@@ -1,0 +1,39 @@
+# 全局配置
+
+# MongoDB
+MONGODB:
+  IP: 127.0.0.1
+  PORT: 27017
+
+NASDAQ:
+  TSLA:
+    - 特斯拉
+    - Tesla
+  NVDA:
+    - 英伟达
+    - Nvidia
+  FB:
+    - Facebook
+    - 脸书
+  BIDU:
+    - 百度
+    - Baidu
+  NTES:
+    - 网易
+  XNET:
+    - 迅雷
+    - Xunlei
+
+CRYPTOCURRENCY:
+  BITCOIN:
+    - bitcoin
+    - 比特币
+    - 区块链
+  EOS:
+    - EOS
+    - 区块链
+    - 柚子
+  STELLAR:
+    - XLM
+    - 恒星币
+    - Stellar
