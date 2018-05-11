@@ -1,8 +1,9 @@
-# Custom ignore / log / txt / html / csv
+# Custom ignore / log / txt / html / csv / pkl
 *.log
 *.txt
 *.html
 *.csv
+*.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
