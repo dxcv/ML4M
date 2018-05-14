@@ -79,7 +79,7 @@ class News_effect_price(object):
         news_df = news_df.groupby('publish_time').agg({'news_id': ['size'], 'sentiment': ['mean'], 'full_sentiment': ['mean']})
         news_df.columns = ['news_count', 'news_sentiment', 'news_full_sentiment']
 
-        stock_data_file = '../database/%s.csv' % symbol
+        stock_data_file = '../database/market/%s.csv' % symbol
         stock_df = pd.read_csv(stock_data_file)
 
         # 去掉Nasdaq行情首行的当天行情
@@ -115,7 +115,7 @@ class News_effect_price(object):
         debug(prepared_df.dtypes)
         return prepared_df
 
-    def train_news_effect_close_change(self, prepared_df):
+    def train_news_effect_close_change(self, symbol, prepared_df):
         """
         【新闻情感的7天移动平均】和【成交量涨跌幅度的7天移动平均】对【收盘价的7天移动平均的涨跌】的影响
         """
@@ -192,7 +192,7 @@ class News_effect_price(object):
         debug(test_score)
 
         # 持久化模型
-        pkl_file_list = joblib.dump(clf, './train_pkl/KNN_K-%d_VALIDATIONSCORE-%f_TESTSCORE-%f_NAME-%s.pkl' % (k, validation_score, test_score, train_name))
+        pkl_file_list = joblib.dump(clf, './train_pkl/KNN_%s_K-%d_VALIDATIONSCORE-%f_TESTSCORE-%f_NAME-%s.pkl' % (symbol, k, validation_score, test_score, train_name))
         debug(pkl_file_list)
         return pkl_file_list
 
@@ -202,5 +202,5 @@ if __name__ == '__main__':
     symbol = 'TSLA'
     train = News_effect_price()
     prepared_df = train.prepare_data(symbol)
-    pkl_file_list = train.train_news_effect_close_change(prepared_df)
+    pkl_file_list = train.train_news_effect_close_change(symbol, prepared_df)
     info(pkl_file_list)
