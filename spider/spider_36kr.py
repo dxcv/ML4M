@@ -255,7 +255,7 @@ class Spider36KR(object):
 
         refresh_all: True，全部重新计算；False，只计算缺少情感得分的。
         """
-        info('Refreshing sentiment, keyword = %s' % search_word)
+        info('Refreshing sentiment, symbol = %s, keyword = %s' % (symbol, search_word))
         refresh_count = 0
 
         # 读取原先的新闻数据
