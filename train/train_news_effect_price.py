@@ -38,12 +38,19 @@ class News_effect_price(object):
         输入：Symbol，如TSLA等NASDAQ SYMBOL，或BITCOIN，具体值看../conf/conf.yaml
         输出：行情和新闻结合的DataFrame
         """
+        info('prepare data, symbol = %s' % symbol)
+
+        # 开始处理新闻数据
+        info('prepare news data')
         self.client = pymongo.MongoClient(MONGODB['IP'], MONGODB['PORT'])
         self.db = self.client['test']
         self.tb = self.db['news_36kr']
 
+        # 查询新闻
         result = self.tb.find({'symbol': symbol})
+        info('news count = %d' % result.count())
 
+        # 没有新闻说明流程或数据有问题，没必要继续往下了
         if result.count() == 0:
             raise '%s news not in mongodb!'
 
@@ -67,6 +74,8 @@ class News_effect_price(object):
             "full_sentiment" : 0.9999999999749525
         }
         '''
+
+        # 加载为DataFrame
         news_df = pd.DataFrame(list(result))
         debug(news_df.head())
         debug(news_df.dtypes)
@@ -79,12 +88,24 @@ class News_effect_price(object):
         news_df = news_df.groupby('publish_time').agg({'news_id': ['size'], 'sentiment': ['mean'], 'full_sentiment': ['mean']})
         news_df.columns = ['news_count', 'news_sentiment', 'news_full_sentiment']
 
+        # 开始处理行情数据
+        info('prepare stock data')
         stock_data_file = '../database/market/%s.csv' % symbol
         stock_df = pd.read_csv(stock_data_file)
 
+        # 筛选字段
+        stock_df = stock_df.loc[:, ['date', 'open', 'close', 'volume']]
+
         # 去掉Nasdaq行情首行的当天行情
-        stock_df = stock_df.drop([0])
-        stock_df = stock_df.drop(columns=['high', 'low'])
+        if symbol in NASDAQ:
+            stock_df = stock_df.drop([0])
+
+        # 处理Coinmarketcap的早期缺失数据
+        if symbol in CRYPTOCURRENCY:
+            stock_df = stock_df.replace(to_replace='-', value=pd.np.nan)
+
+        # 抛弃空值异常值
+        stock_df.dropna(axis=0, how='any', inplace=True)
 
         # 格式化日期，和news_df['publish_time']一致
         stock_df['date'] = stock_df['date'].apply(lambda x: pd.Period(x, freq='D'))
@@ -100,6 +121,7 @@ class News_effect_price(object):
         debug(stock_df.dtypes)
 
         # 用Merge等同于Join
+        info('merge DataFrame')
         prepared_df = pd.merge(stock_df, news_df, how='left', left_index=True, right_index=True)
         prepared_df = prepared_df.loc[:, ['open', 'close', 'volume', 'news_count', 'news_sentiment', 'news_full_sentiment']]
 
@@ -119,6 +141,8 @@ class News_effect_price(object):
         """
         【新闻情感的7天移动平均】和【成交量涨跌幅度的7天移动平均】对【收盘价的7天移动平均的涨跌】的影响
         """
+        info('training, symbol = %s' % symbol)
+
         train_name = 'MA_7d_sentiment_and_MA_7d_volumn_pct_change_to_MA_7d_close_rise_or_drop'
 
         # 计算7天移动平均
@@ -143,6 +167,7 @@ class News_effect_price(object):
         scaler_df = prepared_df.loc[:, ['MA_7d_sentiment', 'MA_7d_volumn_pct_change']]
 
         # 归一化
+        info('scaler transform')
         scaler = MinMaxScaler()
         scaler.fit(scaler_df)
         scaler_arr = scaler.transform(scaler_df)  # 返回的是np.array
@@ -163,6 +188,7 @@ class News_effect_price(object):
         test_label = label_arr[training_count + validation_count:]
 
         # 调优最佳K值
+        info('validating')
         validation_result = []
         for k in range(1, int(len(scaler_arr) ** 0.5), 1):
             clf = neighbors.KNeighborsClassifier(
@@ -178,6 +204,7 @@ class News_effect_price(object):
 
         # 最佳K值和得分
         validation_score, k = sorted(validation_result)[::-1][0]
+        info('best k = %d, validation_score = %f' % (k, validation_score))
 
         # 最优训练模型
         clf = neighbors.KNeighborsClassifier(
@@ -189,18 +216,21 @@ class News_effect_price(object):
 
         # 计算测试得分
         test_score = clf.score(test_set, test_label)
-        debug(test_score)
+        info('test_score = %f' % test_score)
 
         # 持久化模型
         pkl_file_list = joblib.dump(clf, './train_pkl/KNN_%s_K-%d_VALIDATIONSCORE-%f_TESTSCORE-%f_NAME-%s.pkl' % (symbol, k, validation_score, test_score, train_name))
-        debug(pkl_file_list)
+        info('model persistence, pkl_file_list = %s' % str(pkl_file_list))
         return pkl_file_list
 
 
 if __name__ == '__main__':
-    set_log(DEBUG)
-    symbol = 'TSLA'
+    set_log(INFO)
     train = News_effect_price()
-    prepared_df = train.prepare_data(symbol)
-    pkl_file_list = train.train_news_effect_close_change(symbol, prepared_df)
-    info(pkl_file_list)
+    symbol_dict = dict(NASDAQ, **CRYPTOCURRENCY)
+    # symbol_dict = CRYPTOCURRENCY
+    for symbol in symbol_dict.keys():
+        info('Training %s' % symbol)
+        prepared_df = train.prepare_data(symbol)
+        pkl_file_list = train.train_news_effect_close_change(symbol, prepared_df)
+        info(pkl_file_list)
