@@ -4,9 +4,11 @@
 
 import os
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+
 import time
 import requests
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+import pandas as pd
 from common.log import *
 from common.config import Config
 
@@ -43,11 +45,20 @@ class Spider_coinmarketcap(object):
         # 构造URL
         url = 'https://coinmarketcap.com/currencies/%s/historical-data/?start=%s&end=%s' % (symbol, start_date, end_date)
         debug(url)
-        datafile = '../database/market/%s.html' % symbol
+
+        # 构造headers
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
+        }
+
+        # 请求数据
+        r = requests.get(url, headers=headers)
+        df = pd.read_html(r.text)[0]
+
+        # 保存数据
+        datafile = '../database/market/%s.csv' % symbol
         info('Writting %s' % datafile)
-        r = requests.get(url)
-        with open(datafile, 'w+', encoding='utf-8') as f:
-            f.write(r.text)
+        df.to_csv(datafile, header=['date', 'open', 'high', 'low', 'close', 'volume', 'market cap'], index=False, encoding='utf-8')
         return datafile
 
 
