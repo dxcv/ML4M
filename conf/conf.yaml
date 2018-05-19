@@ -41,6 +41,84 @@ NASDAQ:
   AMZN:
     - 亚马逊
     - Amazon
+  SYMC:
+    - 赛门铁克
+  SSTI:
+    - 超捷半导体
+  SSNC:
+    - SS&C科技
+  OCLR:
+    - Oclaro
+  NXPI:
+    - 恩智浦
+  Z:
+    - Zillow
+  YNDX:
+    - Yandex
+  AABA:
+    - 雅虎
+    - Yahoo
+  XLNX:
+    - 赛灵思
+  SCTY:
+    - SolarCity
+  QCOM:
+    - 高通
+  NFLX:
+    - 奈飞
+    - Netflix
+  MU:
+    - 美光科技
+  MSFT:
+    - 微软
+    - Microsoft
+  HIMX:
+    - 奇景光电
+  GTAT:
+    - GT Advanced
+  GOOG:
+    - 谷歌
+    - Google
+    - Alphabet
+  FSLR:
+    - 第一太阳能
+  DSKY:
+    - 乐逗游戏
+  CYBR:
+    - Cyber-Ark软件
+  CSCO:
+    - 思科
+    - Cisco
+
+NYSE:
+  QTM:
+    - 昆腾数据
+  YELP:
+    - Yelp
+  TWTR:
+    - Twitter
+    - 推特
+  ORCL:
+    - 甲骨文
+    - Oracle
+  NOK:
+    - 诺基亚
+    - Nokia
+  MBLY:
+    - Mobileye
+  LNKD:
+    - 领英
+    - Linkedin
+  IBM:
+    - IBM
+  DDD:
+    - 3D Systems
+  CRCM:
+    - Care.com
+  CHU:
+    - 联通
+  TSM:
+    - 台积电
 
 CRYPTOCURRENCY:
   BITCOIN:
@@ -55,3 +133,109 @@ CRYPTOCURRENCY:
     - XLM
     - 恒星币
     - Stellar
+
+NASDAQ100:
+  - NDX
+  - ATVI
+  - ADBE
+  - ALXN
+  - ALGN
+  - GOOGL
+  - GOOG
+  - AMZN
+  - AAL
+  - AMGN
+  - ADI
+  - AAPL
+  - AMAT
+  - ASML
+  - ADSK
+  - ADP
+  - BIDU
+  - BIIB
+  - BMRN
+  - BKNG
+  - AVGO
+  - CA
+  - CDNS
+  - CELG
+  - CERN
+  - CHTR
+  - CHKP
+  - CTAS
+  - CSCO
+  - CTXS
+  - CTSH
+  - CMCSA
+  - COST
+  - CSX
+  - CTRP
+  - XRAY
+  - DISH
+  - DLTR
+  - EBAY
+  - EA
+  - EXPE
+  - ESRX
+  - FB
+  - FAST
+  - FISV
+  - GILD
+  - HAS
+  - HSIC
+  - HOLX
+  - IDXX
+  - ILMN
+  - INCY
+  - INTC
+  - INTU
+  - ISRG
+  - JBHT
+  - JD
+  - KLAC
+  - LRCX
+  - LBTYA
+  - LBTYK
+  - MAR
+  - MXIM
+  - MELI
+  - MCHP
+  - MU
+  - MSFT
+  - MDLZ
+  - MNST
+  - MYL
+  - NTES
+  - NFLX
+  - NVDA
+  - ORLY
+  - PCAR
+  - PAYX
+  - PYPL
+  - QCOM
+  - QRTEA
+  - REGN
+  - ROST
+  - STX
+  - SHPG
+  - SIRI
+  - SWKS
+  - SBUX
+  - SYMC
+  - SNPS
+  - TMUS
+  - TTWO
+  - TSLA
+  - TXN
+  - KHC
+  - FOXA
+  - FOX
+  - ULTA
+  - VRSK
+  - VRTX
+  - VOD
+  - WBA
+  - WDC
+  - WDAY
+  - WYNN
+  - XLNX
