@@ -23,6 +23,24 @@ NASDAQ:
   XNET:
     - 迅雷
     - Xunlei
+  INTC:
+    - Intel
+    - 英特尔
+  AAPL:
+    - Apple
+    - 苹果
+    - 库克
+    - 乔布斯
+    - iPhone
+    - iPad
+    - Mac
+    - iOS
+    - AppStore
+  JD:
+    - 京东
+  AMZN:
+    - 亚马逊
+    - Amazon
 
 CRYPTOCURRENCY:
   BITCOIN:
