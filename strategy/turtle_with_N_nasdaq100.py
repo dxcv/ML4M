@@ -31,14 +31,14 @@ end_date = '2018-06-06'
 
 # 海龟参数
 TURTLE_POS = 20
-TURTLE_POS = 1
+# TURTLE_POS = 1
 ATR_N = 20
 # Turtle System One - Short
 TURTLE_SHORT_BUY_N = 20
 TURTLE_SHORT_SELL_N = 20
 # Turtle System Two - Long
 TURTLE_LONG_BUY_N = 60
-TURTLE_LONG_SELL_N = 20
+TURTLE_LONG_SELL_N = 60
 
 
 # 业务设置
@@ -52,6 +52,21 @@ IS_TAX = False
 
 # 数据准备
 stock_df_dict = {}
+
+
+# 打印变量
+def print_params():
+    print('start_date', start_date)
+    print('end_date', end_date)
+    print('TURTLE_POS', TURTLE_POS)
+    print('TURTLE_SHORT_BUY_N', TURTLE_SHORT_BUY_N)
+    print('TURTLE_SHORT_SELL_N', TURTLE_SHORT_SELL_N)
+    print('TURTLE_LONG_BUY_N', TURTLE_LONG_BUY_N)
+    print('TURTLE_LONG_SELL_N', TURTLE_LONG_SELL_N)
+    print('TURTLE_LONG_SELL_N', TURTLE_LONG_SELL_N)
+    print('START_MONEY', START_MONEY)
+    print('IS_HAPPY_MONEY', IS_HAPPY_MONEY)
+    print('IS_TAX', IS_TAX)
 
 
 def MDD(ret):
@@ -132,6 +147,208 @@ def prepar_data():
             future_result.add_done_callback(callback_prepar_df)
 
 
+def get_signal(symbol, today, yesterday):
+    short_buy_signal = False
+    short_sell_signal = False
+    long_buy_signal = False
+    long_sell_signal = False
+
+    # if symbol in ['ALGN', 'ROST', 'ORLY', 'ESRX', 'ULTA', 'REGN', 'MNST']:
+    #     pass
+
+    if symbol == 'NDX':
+        return False
+
+    if today not in stock_df_dict[symbol].index or yesterday not in stock_df_dict[symbol].index:
+        return symbol, short_buy_signal, short_sell_signal, long_buy_signal, long_sell_signal
+
+    # order_arr = stock_df_dict[symbol].to_records(index=False)
+
+    # 卖出信号
+    short_sell_signal = (stock_df_dict[symbol].loc[today, 'open'] <= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
+    long_sell_signal = (stock_df_dict[symbol].loc[today, 'open'] <= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+
+    # 买入信号
+    if stock_df_dict[symbol].loc[today, 'MA30'] >= stock_df_dict[symbol].loc[today, 'MA180']:
+        long_buy_signal = stock_df_dict[symbol].loc[today, 'open'] >= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]
+        short_buy_signal = stock_df_dict[symbol].loc[today, 'open'] >= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]
+
+    return symbol, short_buy_signal, short_sell_signal, long_buy_signal, long_sell_signal
+
+
+def callback_get_signal(r):
+    ret = r.result()
+    if not ret:
+        signal[ret[0]] = (ret[1:])
+
+
+signal = {}
+sell_signal = {}
+buy_signal = {}
+
+
+def multirun_turtle():
+    PROPERTY = START_MONEY
+    CASH = START_MONEY
+
+    show_df = None
+    show_df = stock_df_dict['NDX'].copy()
+
+    order_df = None
+    order_df = pd.DataFrame(columns=[
+        'buy_date', 'symbol', 'buy_count', 'buy_price', 'buy_reason', 'sell_date', 'sell_price', 'sell_reason', 'profit', 'cash', 'property'
+    ])
+    count_day = 0
+    yesterday = None
+
+    for today in pd.period_range(start=start_date, end=end_date, freq='D'):
+        signal.clear()
+        count_day += 1
+
+        if yesterday is None:
+            yesterday = today
+            continue
+
+        if today not in stock_df_dict['NDX'].index:
+            continue
+
+        if IS_HAPPY_MONEY:
+            if PROPERTY > START_MONEY * 2:
+                global HAPPY_MONEY
+                HAPPY_MONEY += int(START_MONEY / 2)
+                PROPERTY -= int(START_MONEY / 2)
+                CASH = PROPERTY
+
+        # 买卖过程
+        with ProcessPoolExecutor(2) as pool:
+            for symbol in NASDAQ100[:]:
+                future_result = pool.submit(get_signal, symbol, today, yesterday)
+                # 当进程完成任务即calc运行结束后的回调函数
+                future_result.add_done_callback(callback_get_signal)
+
+
+    #         # 突破下行趋势，清仓退出
+    #         order_arr = order_df.to_records(index=False)
+    #         if len(order_arr[(order_arr.symbol == symbol) & (order_arr.sell_price == 0)]) != 0:
+    #             is_sell = False
+    #             for idx in order_df[(order_df['symbol'] == symbol) & (order_df['sell_price'] == 0)].index:
+    #                 if order_df.loc[idx, 'buy_reason'] == 'SHORT':
+    #                     is_sell = (stock_df_dict[symbol].loc[today, 'open'] <=
+    #                                stock_df_dict[symbol].loc[today, 'ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
+    #                 if order_df.loc[idx, 'buy_reason'] == 'LONG':
+    #                     is_sell = (stock_df_dict[symbol].loc[today, 'open'] <=
+    #                                stock_df_dict[symbol].loc[today, 'ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+    #                 if is_sell:
+    #                     CASH += order_df.loc[idx, 'buy_count'] * \
+    #                         stock_df_dict[symbol].loc[today, 'open']
+    #                     order_df.loc[idx, 'sell_date'] = today
+    #                     order_df.loc[idx,
+    #                                  'sell_price'] = stock_df_dict[symbol].loc[today, 'open']
+    #                     order_df.loc[idx, 'sell_reason'] = 'EXIT'
+    #                     order_df.loc[idx, 'profit'] = \
+    #                         (order_df.loc[idx, 'sell_price'] - order_df.loc[idx, 'buy_price']) * order_df.loc[idx, 'buy_count']
+    #                 # print(today, '退出', stock_df_dict[symbol].loc[today, 'open'], CASH)
+
+    #         # 突破上行趋势，买入一份
+    #         order_arr = order_df.to_records(index=False)
+    #         if stock_df_dict[symbol].loc[today, 'MA30'] >= stock_df_dict[symbol].loc[today, 'MA180']:
+    #             is_buy = False
+    #             if stock_df_dict[symbol].loc[today, 'open'] >= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
+    #                 is_buy = True
+    #                 buy_reason = 'LONG'
+    #             elif stock_df_dict[symbol].loc[today, 'open'] >= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
+    #                 is_buy = True
+    #                 buy_reason = 'SHORT'
+    #             if is_buy:
+    #                 buy_count = 0
+    #                 if CASH >= PROPERTY / TURTLE_POS:
+    #                     buy_count = int(
+    #                         (PROPERTY / TURTLE_POS) / stock_df_dict[symbol].loc[today, 'open'])
+    #                 if buy_count > 0:
+    #                     CASH -= buy_count * \
+    #                         stock_df_dict[symbol].loc[today, 'open']
+    #                     # print(today, '买入', buy_count, stock_df_dict[symbol].loc[today, 'open'], CASH)
+    #                     order_df = order_df.append(
+    #                         {
+    #                             'buy_date': today,
+    #                             'symbol': symbol,
+    #                             'buy_count': buy_count,
+    #                             'buy_price': stock_df_dict[symbol].loc[today, 'open'],
+    #                             'buy_reason': buy_reason,
+    #                             'sell_date': pd.np.nan,
+    #                             'sell_price': 0,
+    #                             'profit': 0,
+    #                             'cash': CASH,
+    #                             'property': PROPERTY,
+    #                         },
+    #                         ignore_index=True
+    #                     )
+
+    #     # 每天盘点财产
+    #     show_df.loc[today, 'CASH_TURTLE_%d_%d_%d' %
+    #                 (TURTLE_POS, TURTLE_LONG_BUY_N, TURTLE_LONG_SELL_N)] = CASH
+    #     PROPERTY = CASH + \
+    #         sum(
+    #             [
+    #                 stock_df_dict[order_df.loc[idx, 'symbol']].loc[today,
+    #                                                                'open'] * order_df.loc[idx, 'buy_count']
+    #                 for idx in order_df.loc[order_df['sell_price'] == 0].index
+    #             ]
+    #         )
+    #     show_df.loc[today, 'PROPERTY_TURTLE_%d_%d_%d' %
+    #                 (TURTLE_POS, TURTLE_LONG_BUY_N, TURTLE_LONG_SELL_N)] = PROPERTY
+    #     yesterday = today
+
+    # # 最终结果
+    # print('CASH', CASH)
+    # print('HAPPY_MONEY', HAPPY_MONEY)
+    # print('PROPERTY', PROPERTY)
+
+    # benchmark_symbol = 'NDX'
+    # s_p = stock_df_dict[benchmark_symbol][start_date:].iloc[0].open
+    # e_p = stock_df_dict[benchmark_symbol].iloc[-1].open
+    # print(benchmark_symbol, s_p, e_p, e_p / s_p)
+
+    # show_df = show_df[start_date:].dropna(how='any', inplace=False)
+    # show_df['strategy_pct'] = show_df['PROPERTY_TURTLE_%d_%d_%d' % (TURTLE_POS, TURTLE_LONG_BUY_N, TURTLE_LONG_SELL_N)].pct_change()
+    # # show_df['benchmark_pct'] = show_df['open'].pct_change()
+    # show_df['benchmark_pct'] = stock_df_dict[benchmark_symbol].open.pct_change()
+    # # print('cum_returns', emp.cum_returns(show_df.strategy_pct))
+    # print('max_drawdown', emp.max_drawdown(show_df.strategy_pct))
+    # print('MDD', MDD(show_df['PROPERTY_TURTLE_%d_%d_%d' % (TURTLE_POS, TURTLE_LONG_BUY_N, TURTLE_LONG_SELL_N)]))
+    # print('annual_return', emp.annual_return(show_df.strategy_pct))
+    # print('annual_volatility', emp.annual_volatility(show_df.strategy_pct, period='daily'))
+    # print('calmar_ratio', emp.calmar_ratio(show_df.strategy_pct))
+    # print('sharpe_ratio', emp.sharpe_ratio(returns=show_df.strategy_pct))
+    # print('alpha', emp.alpha(returns=show_df.strategy_pct, factor_returns=show_df.benchmark_pct, risk_free=0.00))
+    # print('beta', emp.beta(returns=show_df.strategy_pct, factor_returns=show_df.benchmark_pct, risk_free=0.00))
+    # # print(show_df['PROPERTY_TURTLE_%d_%d_%d' % (TURTLE_POS, TURTLE_LONG_BUY_N, TURTLE_LONG_SELL_N)])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def run_turtle():
     PROPERTY = START_MONEY
     CASH = START_MONEY
@@ -164,8 +381,11 @@ def run_turtle():
                 CASH = PROPERTY
 
         # 买卖过程
-        # for symbol in NASDAQ100[:]:
-        for symbol in ['TSLA']:
+        sell_signal = []
+        buy_signal = []
+
+        for symbol in NASDAQ100[:]:
+        # for symbol in ['TSLA']:
             if symbol in ['ALGN', 'ROST', 'ORLY', 'ESRX', 'ULTA', 'REGN', 'MNST']:
                 # continue
                 pass
@@ -205,7 +425,7 @@ def run_turtle():
                 if stock_df_dict[symbol].loc[today, 'open'] >= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
                     is_buy = True
                     buy_reason = 'LONG'
-                elif False and stock_df_dict[symbol].loc[today, 'open'] >= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
+                elif stock_df_dict[symbol].loc[today, 'open'] >= stock_df_dict[symbol].loc[today, 'ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
                     is_buy = True
                     buy_reason = 'SHORT'
                 if is_buy:
@@ -253,7 +473,7 @@ def run_turtle():
     print('HAPPY_MONEY', HAPPY_MONEY)
     print('PROPERTY', PROPERTY)
 
-    benchmark_symbol = 'TSLA'
+    benchmark_symbol = 'NDX'
     s_p = stock_df_dict[benchmark_symbol][start_date:].iloc[0].open
     e_p = stock_df_dict[benchmark_symbol].iloc[-1].open
     print(benchmark_symbol, s_p, e_p, e_p / s_p)
@@ -276,11 +496,13 @@ def run_turtle():
 
 
 if __name__ == '__main__':
+    print_params()
     print(time.ctime())
     prepar_data()
     # print(stock_df_dict['TSLA'].tail(10))
     print(time.ctime())
-    run_turtle()
+    # run_turtle()
+    multirun_turtle()
     print(time.ctime())
     # print(stock_df_dict['NDX'].open)
     # print(MDD(stock_df_dict['NDX'].open))
