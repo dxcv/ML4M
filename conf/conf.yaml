@@ -133,6 +133,17 @@ CRYPTOCURRENCY:
     - XLM
     - 恒星币
     - Stellar
+  ETHEREUM:
+    - ETHEREUM
+    - ETH
+    - 以太坊
+  RIPPLE:
+    - RIPPLE
+    - XRP
+    - 瑞波币
+  LITECOIN:
+    - LITECOIN
+    - 莱特币
 
 NASDAQ100:
   - NDX
