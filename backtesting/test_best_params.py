@@ -53,7 +53,7 @@ IS_TAX = False
 IS_SLIPPAGE = False
 IS_RANDOM_BUY = False
 IS_FILTER = False
-IS_MARKETUP = True
+IS_MARKETUP = False
 IS_BUYBENCHMARK = True
 IS_SHOWBUYLIST = True
 START_MONEY = 100000
@@ -62,7 +62,7 @@ PROPERTY = START_MONEY
 CASH = START_MONEY
 
 
-score_df = None
+# score_df = None
 score_df = pd.DataFrame(columns=[
     'START',
     'END',
@@ -167,8 +167,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
         count_day += 1
 
         # 每年年初计算回报率
-        if today.dayofyear == 1 or today == (pd.to_datetime(end_date)).to_period(freq='D'):
-            print(today, time.ctime())
+        # if today.dayofyear == 1 or today == (pd.to_datetime(end_date)).to_period(freq='D'):
+        #     print(today, time.ctime())
 
         # 每年筛股
         if IS_FILTER and (today.dayofyear == 1 or count_day == 1):
@@ -445,16 +445,15 @@ def work(TURTLE_POS, TURTLE_LONG):
     df = df.groupby(by='symbol').sum()
     buy_stock_count = len(df)
 
-    global score_df
-    score_df = score_df.append({
+    score_sr = pd.Series({
         'START': start_date,
         'END': end_date,
         'TURTLE_POS': TURTLE_POS,
         'ROLLMAX': TURTLE_LONG,
-        'ROLLMIN': TURTLE_LONG, 
-        'MA_SHORT': 60, 
-        'MA_LONG': 180, 
-        'X_DAY_RETURN': 250, 
+        'ROLLMIN': TURTLE_LONG,
+        'MA_SHORT': 60,
+        'MA_LONG': 180,
+        'X_DAY_RETURN': 250,
         'ORDER': len(order_df),
         'STOCK': buy_stock_count,
         'RETURN': emp.cum_returns(algo)[-1],
@@ -470,32 +469,44 @@ def work(TURTLE_POS, TURTLE_LONG):
         'FREECASH_DAY': FREECASH_DAY,
         'MISS_SIGNAL': miss_buy_long,
         'RET_PER_YEAR': output_str,
-    }, ignore_index = True)
+    })
 
-    return True
+    # return True
+    # return len(stock_df_dict)
+    return TURTLE_POS, TURTLE_LONG, score_sr
 
 
 def when_done(r):
-    print('when_done')
+    # info('when_done')
+    # info(r.result())
+    res = r.result()
+    info(res[2])
+    global score_df
+    score_df = score_df.append(res[2], ignore_index=True)
     return r.result()
 
 
+def work2(pos, n):
+    return pos, n
+
+
 def main():
-    pos_list = [x*10 for x in range(1, 2)]
-    n_list = [x*10 for x in range(1, 3)]
-    print(pos_list)
-    print(n_list)
+    pos_list = [x * 10 for x in range(1, 6)]
+    n_list = [x * 10 for x in range(1, 11)]
+    # print(pos_list)
+    # print(n_list)
     params = itertools.product(pos_list, n_list)
-    for pos, n in params:
-        print(pos, n)
-        work(pos, n)
-    # with ProcessPoolExecutor() as pool:
-    #     for pos, n in params:
-    #         future_result = pool.submit(work, pos, n)
-    #         future_result.add_done_callback(when_done)
+    # for pos, n in params:
+    #     print(pos, n)
+    #     work(pos, n)
+    with ProcessPoolExecutor(3) as pool:
+        for pos, n in params:
+            info('submit %d %d' % (pos, n))
+            future_result = pool.submit(work, pos, n)
+            future_result.add_done_callback(when_done)
 
     print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'RETURN']])
-    # score_df.to_csv('../database/%s.csv' % time.strftime('%Y-%m-%d-%H-%M-%S'))
+    score_df.to_csv('../database/%s.csv' % time.strftime('%Y-%m-%d-%H-%M-%S'))
 
 
 if __name__ == '__main__':
