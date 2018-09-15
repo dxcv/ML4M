@@ -36,7 +36,7 @@ TARGET = HS300
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2017-01-01'
+start_date = '2005-01-01'
 end_date = '2018-08-01'
 
 TURTLE_POS = 50
@@ -53,7 +53,7 @@ IS_TAX = False
 IS_SLIPPAGE = False
 IS_RANDOM_BUY = False
 IS_FILTER = False
-IS_MARKETUP = False
+IS_MARKETUP = True
 IS_BUYBENCHMARK = True
 IS_SHOWBUYLIST = True
 START_MONEY = 100000
@@ -239,18 +239,18 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
                         ignore_index=True
                     )
 
-        # 开心止盈，倍数止盈
-        if IS_HAPPYMONEY:        
-            if PROPERTY > START_MONEY * 2 and CASH > START_MONEY:
-                HAPPY_MONEY += START_MONEY
-                PROPERTY -= START_MONEY
-                CASH -= START_MONEY
+        # # 开心止盈，倍数止盈
+        # if IS_HAPPYMONEY:        
+        #     if PROPERTY > START_MONEY * 2 and CASH > START_MONEY:
+        #         HAPPY_MONEY += START_MONEY
+        #         PROPERTY -= START_MONEY
+        #         CASH -= START_MONEY
 
         benchmark_today_market = stock_df_dict[BENCHMARK].loc[today]
-        try:
-            benchmark_yesterday_market = stock_df_dict[BENCHMARK].loc[:today].iloc[-2]
-        except:
-            benchmark_yesterday_market = stock_df_dict[BENCHMARK].loc[:today].iloc[-1]
+        # try:
+        #     benchmark_yesterday_market = stock_df_dict[BENCHMARK].loc[:today].iloc[-2]
+        # except:
+        #     benchmark_yesterday_market = stock_df_dict[BENCHMARK].loc[:today].iloc[-1]
         buy_list = []
 
         # 遍历标的，判断和执行买入
@@ -259,32 +259,28 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
             # 趋势交易，只在好行情时买入
             if IS_MARKETUP:
                 if benchmark_today_market.MA60 < benchmark_today_market.MA180:
-    #             if benchmark_yesterday_market.MA60 < benchmark_yesterday_market.MA180:
                     break
 
-            # 是否购买基准
-            if not IS_BUYBENCHMARK and symbol == BENCHMARK:
-                continue
+            # # 是否购买基准
+            # if not IS_BUYBENCHMARK and symbol == BENCHMARK:
+            #     continue
 
             if today not in stock_df_dict[symbol].index or yesterday not in stock_df_dict[symbol].index:
                 continue
 
-            # TIME TEST
-            # DELETED
-
             today_market = stock_df_dict[symbol].loc[today]
 
             # 突破上行趋势，就买一份
-            order_arr = order_df.to_records(index=False)
+            # order_arr = order_df.to_records(index=False)
             is_buy = False
             # 指数就不要过滤器了
             if True:
                 if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
                     is_buy = True
                     buy_reason = 'LONG'
-                elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
-                    is_buy = True
-                    buy_reason = 'SHORT'
+                # elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
+                #     is_buy = True
+                #     buy_reason = 'SHORT'
 
             if is_buy:
                 buy_list.append(symbol)
@@ -491,15 +487,15 @@ def work2(pos, n):
 
 
 def main():
-    pos_list = [x * 10 for x in range(1, 6)]
-    n_list = [x * 10 for x in range(1, 11)]
+    pos_list = [x * 5 for x in range(6, 11)]
+    n_list = [x * 5 for x in range(1, 21)]
     # print(pos_list)
     # print(n_list)
     params = itertools.product(pos_list, n_list)
     # for pos, n in params:
     #     print(pos, n)
     #     work(pos, n)
-    with ProcessPoolExecutor(3) as pool:
+    with ProcessPoolExecutor(2) as pool:
         for pos, n in params:
             info('submit %d %d' % (pos, n))
             future_result = pool.submit(work, pos, n)
