@@ -202,7 +202,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
 
         # 突破下行趋势，清仓退出
         order_arr = order_df.to_records(index=False)
-        if len(order_arr[(order_arr.buy_count > 0) & (order_arr.sell_price == 0)] ) != 0:
+        if len(order_arr[(order_arr.buy_count > 0) & (order_arr.sell_price == 0)]) != 0:
             is_sell = False
             for idx in order_df[(order_df['buy_count'] > 0) & (order_df['sell_price'] == 0)].index:
                 cur_order = order_df.loc[idx]
@@ -240,7 +240,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
                     )
 
         # # 开心止盈，倍数止盈
-        # if IS_HAPPYMONEY:        
+        # if IS_HAPPYMONEY:
         #     if PROPERTY > START_MONEY * 2 and CASH > START_MONEY:
         #         HAPPY_MONEY += START_MONEY
         #         PROPERTY -= START_MONEY
@@ -296,7 +296,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
                     return_lastyear = stock_df_dict[symbol][:today].iloc[-1].open / stock_df_dict[symbol][:today].iloc[1].open
                 tmp_list.append((return_lastyear, symbol))
             tmp_list = sorted(tmp_list, reverse=True)
-            buy_list = [x[1] for x in tmp_list if x[0]>1]
+            buy_list = [x[1] for x in tmp_list if x[0] > 1]
     #         buy_list = [x[1] for x in tmp_list]
 
         for symbol in buy_list:
@@ -401,9 +401,6 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
     return show_df, order_df, PROPERTY, miss_buy_long
 
 
-
-
-
 def work(TURTLE_POS, TURTLE_LONG):
     # info('work')
     TURTLE_POS = TURTLE_POS
@@ -425,12 +422,12 @@ def work(TURTLE_POS, TURTLE_LONG):
     FREECASH_DAY = len(df[df['CASH_TURTLE'] > (df['PROPERTY_TURTLE'] / TURTLE_POS)])
 
     output_str = ''
-    for y in range(int(start_date.split('-')[0]), int(end_date.split('-')[0])+1, 1):
-        y_df = df.loc['%d-01-01' % y:'%d-01-01' % (y+1)]
+    for y in range(int(start_date.split('-')[0]), int(end_date.split('-')[0]) + 1, 1):
+        y_df = df.loc['%d-01-01' % y:'%d-01-01' % (y + 1)]
         y_algo = y_df['PROPERTY_TURTLE'].pct_change()
         y_benchmark = y_df.open.pct_change()
         result = '%d-%d,%.3f,%.3f,%.3f,%.3f' % (
-            y, y+1, emp.cum_returns(y_algo)[-1], emp.cum_returns(y_benchmark)[-1], emp.max_drawdown(y_algo), emp.max_drawdown(y_benchmark)
+            y, y + 1, emp.cum_returns(y_algo)[-1], emp.cum_returns(y_benchmark)[-1], emp.max_drawdown(y_algo), emp.max_drawdown(y_benchmark)
         )
         output_str += result
         output_str += ';'
@@ -495,7 +492,7 @@ def main():
     # for pos, n in params:
     #     print(pos, n)
     #     work(pos, n)
-    with ProcessPoolExecutor(2) as pool:
+    with ProcessPoolExecutor(1) as pool:
         for pos, n in params:
             info('submit %d %d' % (pos, n))
             future_result = pool.submit(work, pos, n)
