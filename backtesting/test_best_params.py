@@ -53,7 +53,7 @@ IS_TAX = False
 IS_SLIPPAGE = False
 IS_RANDOM_BUY = False
 IS_FILTER = False
-IS_MARKETUP = True
+IS_MARKETUP = False
 IS_BUYBENCHMARK = True
 IS_SHOWBUYLIST = True
 START_MONEY = 100000
@@ -90,9 +90,9 @@ score_df = pd.DataFrame(columns=[
 ])
 
 
-def get_stock_df_dict(TURTLE_LONG):
-    TURTLE_LONG_BUY_N = TURTLE_LONG
-    TURTLE_LONG_SELL_N = TURTLE_LONG
+def get_stock_df_dict(TURTLE_N):
+    TURTLE_LONG_BUY_N = TURTLE_N[0]
+    TURTLE_LONG_SELL_N = TURTLE_N[1]
     stock_df_dict = {}
     for symbol in TARGET + [BENCHMARK]:
         stock_data_file = '../database/market/%s.csv' % symbol
@@ -125,6 +125,7 @@ def get_stock_df_dict(TURTLE_LONG):
         stock_df['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).max()
         stock_df['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).min()
         stock_df['MA180'] = stock_df['open'].rolling(180).mean()
+        stock_df['MA90'] = stock_df['open'].rolling(90).mean()
         stock_df['MA60'] = stock_df['open'].rolling(60).mean()
         stock_df['MA30'] = stock_df['open'].rolling(30).mean()
 
@@ -135,10 +136,10 @@ def get_stock_df_dict(TURTLE_LONG):
     return stock_df_dict
 
 
-def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
+def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
     TURTLE_POS = TURTLE_POS
-    TURTLE_LONG_BUY_N = TURTLE_LONG
-    TURTLE_LONG_SELL_N = TURTLE_LONG
+    TURTLE_LONG_BUY_N = TURTLE_N[0]
+    TURTLE_LONG_SELL_N = TURTLE_N[1]
     PROPERTY = START_MONEY
     CASH = START_MONEY
     count_day = 0
@@ -217,6 +218,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
                 if cur_order.buy_reason == 'LONG':
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+                    is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
                 if is_sell:
                     CASH += cur_order.buy_count * today_market.open
                     order_df.loc[idx, 'sell_date'] = today
@@ -275,7 +277,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
             is_buy = False
             # 指数就不要过滤器了
             if True:
-                if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
+                # if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
+                if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
                     is_buy = True
                     buy_reason = 'LONG'
                 # elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
@@ -401,8 +404,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG):
     return show_df, order_df, PROPERTY, miss_buy_long
 
 
-def work(TURTLE_POS, TURTLE_LONG):
-    # info('work')
+def work(TURTLE_POS, TURTLE_N):
+    info('work %s %s' % (TURTLE_POS, TURTLE_N))
     TURTLE_POS = TURTLE_POS
     stock_df_dict = None
     show_df = None
@@ -410,8 +413,8 @@ def work(TURTLE_POS, TURTLE_LONG):
     PROPERTY = None
     symbol_list = TARGET + [BENCHMARK]
 
-    stock_df_dict = get_stock_df_dict(TURTLE_LONG)
-    show_df, order_df, PROPERTY, miss_buy_long = run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_LONG)
+    stock_df_dict = get_stock_df_dict(TURTLE_N)
+    show_df, order_df, PROPERTY, miss_buy_long = run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N)
 
     df = show_df.dropna(how='any', inplace=False).copy()
     df = df.loc[start_date:end_date]
@@ -442,8 +445,8 @@ def work(TURTLE_POS, TURTLE_LONG):
         'START': start_date,
         'END': end_date,
         'TURTLE_POS': TURTLE_POS,
-        'ROLLMAX': TURTLE_LONG,
-        'ROLLMIN': TURTLE_LONG,
+        'ROLLMAX': TURTLE_N[0],
+        'ROLLMIN': TURTLE_N[1],
         'MA_SHORT': 60,
         'MA_LONG': 180,
         'X_DAY_RETURN': 250,
@@ -466,7 +469,7 @@ def work(TURTLE_POS, TURTLE_LONG):
 
     # return True
     # return len(stock_df_dict)
-    return TURTLE_POS, TURTLE_LONG, score_sr
+    return TURTLE_POS, TURTLE_N, score_sr
 
 
 def when_done(r):
@@ -484,21 +487,22 @@ def work2(pos, n):
 
 
 def main():
-    pos_list = [x * 5 for x in range(6, 11)]
-    n_list = [x * 5 for x in range(1, 21)]
-    # print(pos_list)
-    # print(n_list)
+    pos_list = [x * 5 for x in range(1, 11)]
+    n_list = [(x * 5, x * 5) for x in range(1, 21)]
+    n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
+    print(pos_list)
+    print(n_list)
     params = itertools.product(pos_list, n_list)
     # for pos, n in params:
     #     print(pos, n)
     #     work(pos, n)
-    with ProcessPoolExecutor(1) as pool:
+    with ProcessPoolExecutor(2) as pool:
         for pos, n in params:
-            info('submit %d %d' % (pos, n))
+            info('submit %s %s' % (pos, n))
             future_result = pool.submit(work, pos, n)
             future_result.add_done_callback(when_done)
 
-    print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'RETURN']])
+    print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'ROLLMIN', 'RETURN']])
     score_df.to_csv('../database/%s.csv' % time.strftime('%Y-%m-%d-%H-%M-%S'))
 
 
