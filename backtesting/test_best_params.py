@@ -503,7 +503,8 @@ def main():
             future_result.add_done_callback(when_done)
 
     print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'ROLLMIN', 'RETURN']])
-    score_df.to_csv('../database/%s.csv' % time.strftime('%Y-%m-%d-%H-%M-%S'))
+    csv_file = '../database/%s.csv' % time.strftime('%Y%m%d%H%M%S')
+    score_df.to_csv(csv_file, index=False)
 
 
 if __name__ == '__main__':
