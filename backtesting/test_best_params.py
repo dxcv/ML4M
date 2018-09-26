@@ -36,10 +36,10 @@ TARGET = HS300
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2017-01-01'
+start_date = '2015-01-01'
 end_date = '2018-08-01'
 
-TURTLE_POS = 50
+TURTLE_POS = 10
 ### Turtle System One - Short
 TURTLE_SHORT_BUY_N = 20
 TURTLE_SHORT_SELL_N = 20
@@ -51,7 +51,7 @@ TURTLE_LONG_SELL_N = 60
 IS_HAPPYMONEY = False
 IS_TAX = False
 IS_SLIPPAGE = False
-IS_RANDOM_BUY = False
+IS_RANDOM_BUY = True
 IS_FILTER = False
 IS_MARKETUP = False
 IS_BUYBENCHMARK = True
@@ -219,7 +219,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                 if cur_order.buy_reason == 'LONG':
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
                     is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
-                    is_sell = (today_market.MA30 < today_market['MA%d' % TURTLE_LONG_SELL_N])
+                    # is_sell = (today_market.MA30 < today_market['MA%d' % TURTLE_LONG_SELL_N])
                 if is_sell:
                     CASH += cur_order.buy_count * today_market.open
                     order_df.loc[idx, 'sell_date'] = today
@@ -279,7 +279,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
             # 指数就不要过滤器了
             if True:
                 # if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
-                if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N] and today_market.MA30 >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
+                if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
                     is_buy = True
                     buy_reason = 'LONG'
                 # elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
@@ -489,8 +489,10 @@ def work2(pos, n):
 
 def main():
     pos_list = [x * 5 for x in range(4, 6)]
+    pos_list = [10]
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
+    n_list = [(90, 180)] * 20
     print(pos_list)
     print(n_list)
     params = itertools.product(pos_list, n_list)
