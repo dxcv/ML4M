@@ -37,7 +37,7 @@ ALL_TARGET = TARGET[:]
 
 ### 时间设置
 start_date = '2005-01-01'
-end_date = '2018-08-01'
+end_date = '2018-09-01'
 
 TURTLE_POS = 10
 ### Turtle System One - Short
@@ -51,7 +51,7 @@ TURTLE_LONG_SELL_N = 60
 IS_HAPPYMONEY = False
 IS_TAX = False
 IS_SLIPPAGE = False
-IS_RANDOM_BUY = False
+IS_RANDOM_BUY = True
 IS_FILTER = False
 IS_MARKETUP = False
 IS_BUYBENCHMARK = True
@@ -124,7 +124,7 @@ def get_stock_df_dict(TURTLE_N):
         # Turtle指标
         stock_df['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).max()
         stock_df['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).min()
-        stock_df['MA250'] = stock_df['open'].rolling(250).mean()
+        # stock_df['MA250'] = stock_df['open'].rolling(250).mean()
         stock_df['MA180'] = stock_df['open'].rolling(180).mean()
         stock_df['MA90'] = stock_df['open'].rolling(90).mean()
         stock_df['MA60'] = stock_df['open'].rolling(60).mean()
@@ -490,12 +490,14 @@ def work2(pos, n):
 
 def main():
     pos_list = [x * 5 for x in range(4, 6)]
-    pos_list = [10, 20, 30]
+    pos_list = [10, 20, 30, 40, 50]
+    pos_list = [10]
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
-    n_list = [(90, 180)] * 20
-    n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
-    n_list = [(180, 250)]
+    n_list = [(90, 180)] * 100
+    # n_list = [(60, 60)] * 100
+    # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
+    # n_list = [(180, 250)]
     print(pos_list)
     print(n_list)
     params = itertools.product(pos_list, n_list)
