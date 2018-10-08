@@ -51,7 +51,7 @@ TURTLE_LONG_SELL_N = 60
 IS_HAPPYMONEY = False
 IS_TAX = False
 IS_SLIPPAGE = False
-IS_RANDOM_BUY = True
+IS_RANDOM_BUY = False
 IS_FILTER = False
 IS_MARKETUP = False
 IS_BUYBENCHMARK = True
@@ -218,9 +218,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                 if cur_order.buy_reason == 'SHORT':
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
                 if cur_order.buy_reason == 'LONG':
-                    is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+                    # is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
                     is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
-                    # is_sell = (today_market.MA30 < today_market['MA%d' % TURTLE_LONG_SELL_N])
                 if is_sell:
                     CASH += cur_order.buy_count * today_market.open
                     order_df.loc[idx, 'sell_date'] = today
@@ -302,7 +301,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                 tmp_list.append((return_lastyear, symbol))
             tmp_list = sorted(tmp_list, reverse=True)
             buy_list = [x[1] for x in tmp_list if x[0] > 1]
-    #         buy_list = [x[1] for x in tmp_list]
+            # buy_list = [x[1] for x in tmp_list]
+            # random.shuffle(buy_list)
 
         for symbol in buy_list:
             today_market = stock_df_dict[symbol].loc[today]
@@ -319,11 +319,11 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                 buy_count = int((PROPERTY / TURTLE_POS) / buy_price)
 
             # 指数购买，满仓干
-    #         buy_count = int(CASH / buy_price)
+            # buy_count = int(CASH / buy_price)
 
             if buy_count > 0:
                 if today_market.c_o_pct_chg > 0.1 and symbol in HS300:
-    #                 print(today, symbol, '涨停板，买不进')
+                    # print(today, symbol, '涨停板，买不进')
                     continue
 
             if buy_count > 0:
@@ -494,8 +494,8 @@ def main():
     pos_list = [10]
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
-    n_list = [(90, 180)] * 100
-    # n_list = [(60, 60)] * 100
+    n_list = [(90, 180)] * 1
+    # n_list = [(60, 60)] * 20
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
     print(pos_list)
@@ -511,6 +511,7 @@ def main():
             future_result.add_done_callback(when_done)
 
     print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'ROLLMIN', 'RETURN', 'MAXDROPDOWN']])
+    print(score_df.describe())
     csv_file = '../database/%s.csv' % time.strftime('%Y%m%d-%H%M%S')
     score_df.to_csv(csv_file, index=False)
 
