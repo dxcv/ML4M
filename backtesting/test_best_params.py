@@ -36,7 +36,7 @@ TARGET = HS300
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2015-01-01'
+start_date = '2005-01-01'
 end_date = '2018-10-01'
 
 TURTLE_POS = 10
@@ -51,7 +51,7 @@ TURTLE_LONG_SELL_N = 60
 IS_HAPPYMONEY = False
 IS_TAX = False
 IS_SLIPPAGE = False
-IS_RANDOM_BUY = False
+IS_RANDOM_BUY = True
 IS_FILTER = False
 IS_MARKETUP = False
 IS_BUYBENCHMARK = True
@@ -122,13 +122,13 @@ def get_stock_df_dict(TURTLE_N):
         stock_df['c_o_pct_chg'] = (stock_df.open - stock_df.close.shift(1)) / stock_df.close.shift(1)
 
         # Turtle指标
-        stock_df['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).max()
-        stock_df['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).min()
+        # stock_df['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).max()
+        # stock_df['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).min()
         # stock_df['MA250'] = stock_df['open'].rolling(250).mean()
         stock_df['MA180'] = stock_df['open'].rolling(180).mean()
         stock_df['MA90'] = stock_df['open'].rolling(90).mean()
-        stock_df['MA60'] = stock_df['open'].rolling(60).mean()
-        stock_df['MA30'] = stock_df['open'].rolling(30).mean()
+        # stock_df['MA60'] = stock_df['open'].rolling(60).mean()
+        # stock_df['MA30'] = stock_df['open'].rolling(30).mean()
 
         # 减少数据
         stock_df.dropna(how='any', inplace=True)
@@ -229,18 +229,18 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                         (today_market.open - cur_order.buy_price) * cur_order.buy_count
     #                 print(today, '退出', stock_df_dict[symbol].loc[today, 'open'], CASH)
 
-                    ops_df = ops_df.append(
-                        {
-                            'ops_date': today,
-                            'ops': 'SELL',
-                            'symbol': symbol,
-                            'count': cur_order.buy_count,
-                            'price': today_market.open,
-                            'reason': cur_order.buy_reason,
-                            'profit': (today_market.open - cur_order.buy_price) * cur_order.buy_count,
-                        },
-                        ignore_index=True
-                    )
+                    # ops_df = ops_df.append(
+                    #     {
+                    #         'ops_date': today,
+                    #         'ops': 'SELL',
+                    #         'symbol': symbol,
+                    #         'count': cur_order.buy_count,
+                    #         'price': today_market.open,
+                    #         'reason': cur_order.buy_reason,
+                    #         'profit': (today_market.open - cur_order.buy_price) * cur_order.buy_count,
+                    #     },
+                    #     ignore_index=True
+                    # )
 
         # # 开心止盈，倍数止盈
         # if IS_HAPPYMONEY:
@@ -344,18 +344,18 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                     },
                     ignore_index=True
                 )
-                ops_df = ops_df.append(
-                    {
-                        'ops_date': today,
-                        'ops': 'BUY',
-                        'symbol': symbol,
-                        'count': buy_count,
-                        'price': buy_price,
-                        'reason': buy_reason,
-                        'profit': 0,
-                    },
-                    ignore_index=True
-                )
+                # ops_df = ops_df.append(
+                #     {
+                #         'ops_date': today,
+                #         'ops': 'BUY',
+                #         'symbol': symbol,
+                #         'count': buy_count,
+                #         'price': buy_price,
+                #         'reason': buy_reason,
+                #         'profit': 0,
+                #     },
+                #     ignore_index=True
+                # )
             else:
                 if buy_reason == 'LONG':
                     miss_buy_long += 1
@@ -390,18 +390,18 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
         order_df.loc[idx, 'sell_reason'] = 'EXIT'
         order_df.loc[idx, 'profit'] = \
             (today_market.open - cur_order.buy_price) * cur_order.buy_count
-        ops_df = ops_df.append(
-            {
-                'ops_date': today,
-                'ops': 'SELL',
-                'symbol': symbol,
-                'count': cur_order.buy_count,
-                'price': today_market.open,
-                'reason': cur_order.buy_reason,
-                'profit': (today_market.open - cur_order.buy_price) * cur_order.buy_count,
-            },
-            ignore_index=True
-        )
+        # ops_df = ops_df.append(
+        #     {
+        #         'ops_date': today,
+        #         'ops': 'SELL',
+        #         'symbol': symbol,
+        #         'count': cur_order.buy_count,
+        #         'price': today_market.open,
+        #         'reason': cur_order.buy_reason,
+        #         'profit': (today_market.open - cur_order.buy_price) * cur_order.buy_count,
+        #     },
+        #     ignore_index=True
+        # )
 
     return show_df, order_df, PROPERTY, miss_buy_long
 
