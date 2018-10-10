@@ -51,7 +51,7 @@ TURTLE_LONG_SELL_N = 60
 IS_HAPPYMONEY = False
 IS_TAX = False
 IS_SLIPPAGE = False
-IS_RANDOM_BUY = True
+IS_RANDOM_BUY = False
 IS_FILTER = False
 IS_MARKETUP = False
 IS_BUYBENCHMARK = True
@@ -300,9 +300,10 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                     return_lastyear = stock_df_dict[symbol][:today].iloc[-1].open / stock_df_dict[symbol][:today].iloc[1].open
                 tmp_list.append((return_lastyear, symbol))
             tmp_list = sorted(tmp_list, reverse=True)
-            buy_list = [x[1] for x in tmp_list if x[0] > 1]
+            # buy_list = [x[1] for x in tmp_list if x[0] > 1]
+            buy_list = [x[1] for x in tmp_list if x[0] > TURTLE_N[2]]
             # buy_list = [x[1] for x in tmp_list]
-            random.shuffle(buy_list)
+            # random.shuffle(buy_list)
 
         for symbol in buy_list:
             today_market = stock_df_dict[symbol].loc[today]
@@ -449,6 +450,7 @@ def work(TURTLE_POS, TURTLE_N):
         'TURTLE_POS': TURTLE_POS,
         'ROLLMAX': TURTLE_N[0],
         'ROLLMIN': TURTLE_N[1],
+        'LASTYEAR_RETURN': TURTLE_N[2],
         'MA_SHORT': 60,
         'MA_LONG': 180,
         'X_DAY_RETURN': 250,
@@ -495,22 +497,20 @@ def main():
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
     n_list = [(90, 180)] * 50
+    n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
     # n_list = [(60, 60)] * 50
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
     print(pos_list)
     print(n_list)
     params = itertools.product(pos_list, n_list)
-    # for pos, n in params:
-    #     print(pos, n)
-    #     work(pos, n)
     with ProcessPoolExecutor(2) as pool:
         for pos, n in params:
             info('submit %s %s' % (pos, n))
             future_result = pool.submit(work, pos, n)
             future_result.add_done_callback(when_done)
 
-    print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'ROLLMIN', 'RETURN', 'MAXDROPDOWN']])
+    print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'ROLLMIN', 'LASTYEAR_RETURN', 'RETURN', 'MAXDROPDOWN']])
     print(score_df.describe())
     csv_file = '../database/%s.csv' % time.strftime('%Y%m%d-%H%M%S')
     score_df.to_csv(csv_file, index=False)
