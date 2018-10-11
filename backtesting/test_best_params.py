@@ -303,7 +303,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
             # buy_list = [x[1] for x in tmp_list if x[0] > 1]
             buy_list = [x[1] for x in tmp_list if x[0] > TURTLE_N[2]]
             # buy_list = [x[1] for x in tmp_list]
-            # random.shuffle(buy_list)
+            random.shuffle(buy_list)
 
         for symbol in buy_list:
             today_market = stock_df_dict[symbol].loc[today]
@@ -450,7 +450,7 @@ def work(TURTLE_POS, TURTLE_N):
         'TURTLE_POS': TURTLE_POS,
         'ROLLMAX': TURTLE_N[0],
         'ROLLMIN': TURTLE_N[1],
-        'LASTYEAR_RETURN': TURTLE_N[2],
+        # 'LASTYEAR_RETURN': TURTLE_N[2],
         'MA_SHORT': 60,
         'MA_LONG': 180,
         'X_DAY_RETURN': 250,
@@ -496,8 +496,8 @@ def main():
     pos_list = [10]
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
-    n_list = [(90, 180)] * 50
-    n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
+    n_list = [(90, 180, 1)] * 50
+    # n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
     # n_list = [(60, 60)] * 50
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
