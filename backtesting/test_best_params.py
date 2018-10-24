@@ -23,22 +23,28 @@ from common.config import Config
 from spider.spider_nasdaq import Spider_nasdaq
 from spider.spider_coinmarketcap import Spider_coinmarketcap
 
+CONF = Config('../conf/secret.yaml').data[0]
+ts_token = CONF['TUSHARE']['TOKEN']
+ts.set_token(ts_token)
+pro = ts.pro_api()
+
 CONF = Config().data[0]
 MONGODB = CONF['MONGODB']
 NASDAQ = CONF['NASDAQ']
 CRYPTOCURRENCY = CONF['CRYPTOCURRENCY']
 CRYPTOCURRENCY = list(CRYPTOCURRENCY.keys())
 NASDAQ100 = CONF['NASDAQ100']
-HS300 = list(ts.get_hs300s()['code'])
-HSALL = list(set(ts.get_stock_basics().index) - set(['601162', '002940', '002939', '300674', '002941']))
+# HS300 = list(ts.get_hs300s()['code'])
+HS300_df = pd.read_csv('../database/HS300IDX_ALL.csv')
+HS300 = list(set(HS300_df.con_code))
+HS300 = [x.split('.')[0] for x in HS300]
 
 BENCHMARK = '399300'
 TARGET = HS300
-TARGET = HSALL
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2018-01-01'
+start_date = '2014-01-01'
 end_date = '2018-10-01'
 
 TURTLE_POS = 10
@@ -53,7 +59,7 @@ TURTLE_LONG_SELL_N = 60
 IS_HAPPYMONEY = False
 IS_TAX = False
 IS_SLIPPAGE = False
-IS_RANDOM_BUY = False
+IS_RANDOM_BUY = True
 IS_FILTER = False
 IS_MARKETUP = True
 IS_BUYBENCHMARK = True
@@ -98,7 +104,13 @@ def get_stock_df_dict(TURTLE_N):
     stock_df_dict = {}
     for symbol in TARGET + [BENCHMARK]:
         stock_data_file = '../database/market/%s.csv' % symbol
-        stock_df = pd.read_csv(stock_data_file)
+        # info(symbol)
+        if not os.path.isfile(stock_data_file):
+            continue
+        try:
+            stock_df = pd.read_csv(stock_data_file)
+        except:
+            continue
 
         # 筛选字段
         stock_df = stock_df.loc[:, ['date', 'open', 'close']]
@@ -258,8 +270,20 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
         #     benchmark_yesterday_market = stock_df_dict[BENCHMARK].loc[:today].iloc[-1]
         buy_list = []
 
+        # 更新指数成分
+        NEW_TARGET_df = HS300_df[HS300_df.trade_date == int(today.strftime('%Y%m%d'))]
+        if len(NEW_TARGET_df) != 0:
+            NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
+            if sorted(NEW_TARGET) != sorted(symbol_list):
+                # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
+                symbol_list = NEW_TARGET
+        else:
+            pass
+
         # 遍历标的，判断和执行买入
         for symbol in symbol_list:
+            if symbol not in stock_df_dict:
+                continue
 
             # 趋势交易，只在好行情时买入
             if IS_MARKETUP:
@@ -459,6 +483,7 @@ def work(TURTLE_POS, TURTLE_N):
         'ORDER': len(order_df),
         'STOCK': buy_stock_count,
         'RETURN': emp.cum_returns(algo)[-1],
+        'BENCHMARK_RETURN': emp.cum_returns(benchmark)[-1],
         'MAXDROPDOWN': emp.max_drawdown(algo),
         'WINRATE': len(order_df[order_df.profit > 0]) / len(order_df[order_df.profit != 0]),
         'annual_return': emp.annual_return(algo),
@@ -495,13 +520,14 @@ def work2(pos, n):
 def main():
     pos_list = [x * 5 for x in range(4, 6)]
     pos_list = [10, 20, 30, 40, 50]
-    pos_list = [10]
+    pos_list = [50]
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
     n_list = [(90, 180, 1)] * 10
     # n_list = [(90, 180, 0)] * 10
     # n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
-    n_list = [(60, 60, 1)] * 10
+    n_list = [(30, 30, 1)] * 10
+    # n_list = [(60, 60, 1)] * 10
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
     print(pos_list)
@@ -522,3 +548,4 @@ def main():
 if __name__ == '__main__':
     set_log(INFO)
     main()
+    # work(10, (60, 60, 1))
