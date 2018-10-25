@@ -527,6 +527,7 @@ def main():
     # n_list = [(90, 180, 0)] * 10
     # n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
     n_list = [(30, 30, 1)] * 10
+    n_list = list(itertools.product([x * 10 for x in range(1, 7)], [x * 10 for x in range(1, 7)], [1]))
     # n_list = [(60, 60, 1)] * 10
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
