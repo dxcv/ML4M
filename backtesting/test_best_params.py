@@ -520,14 +520,14 @@ def work2(pos, n):
 def main():
     pos_list = [x * 5 for x in range(4, 6)]
     pos_list = [10, 20, 30, 40, 50]
-    pos_list = [50]
+    pos_list = [50] * 10
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
     n_list = [(90, 180, 1)] * 10
     # n_list = [(90, 180, 0)] * 10
     # n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
-    n_list = [(30, 30, 1)] * 10
-    n_list = list(itertools.product([x * 10 for x in range(1, 7)], [x * 10 for x in range(1, 7)], [1]))
+    n_list = [(30, 30, 1)] * 2
+    n_list = list(itertools.product([x * 10 for x in range(1, 11)], [x * 10 for x in range(8, 11)], [1]))
     # n_list = [(60, 60, 1)] * 10
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
