@@ -40,13 +40,15 @@ HS300 = list(set(HS300_df.con_code))
 HS300 = [x.split('.')[0] for x in HS300]
 
 BENCHMARK = '399300'
+BENCHMARK = '163407'
 TARGET = HS300
 TARGET = ['399300']
+TARGET = ['163407']
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2005-01-01'
-end_date = '2018-10-01'
+start_date = '2011-01-01'
+end_date = '2018-11-01'
 
 TURTLE_POS = 10
 ### Turtle System One - Short
@@ -62,7 +64,7 @@ IS_TAX = False
 IS_SLIPPAGE = False
 IS_RANDOM_BUY = True
 IS_FILTER = False
-IS_MARKETUP = False
+IS_MARKETUP = True
 IS_BUYBENCHMARK = True
 IS_SHOWBUYLIST = True
 START_MONEY = 100000
@@ -140,9 +142,9 @@ def get_stock_df_dict(TURTLE_N):
         stock_df['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).max()
         stock_df['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).min()
         # stock_df['MA250'] = stock_df['open'].rolling(250).mean()
-        # stock_df['MA180'] = stock_df['open'].rolling(180).mean()
+        stock_df['MA180'] = stock_df['open'].rolling(180).mean()
         # stock_df['MA90'] = stock_df['open'].rolling(90).mean()
-        # stock_df['MA60'] = stock_df['open'].rolling(60).mean()
+        stock_df['MA60'] = stock_df['open'].rolling(60).mean()
         # stock_df['MA30'] = stock_df['open'].rolling(30).mean()
         stock_df['MA%d' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).mean()
         stock_df['MA%d' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).mean()
@@ -229,14 +231,14 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                 if today not in stock_df_dict[symbol].index or yesterday not in stock_df_dict[symbol].index:
                     continue
                 today_market = stock_df_dict[symbol].loc[today]
-                if today_market.c_o_pct_chg < -0.1 and symbol in HS300:
+                if today_market.c_o_pct_chg < -0.1:
     #                 print(today, symbol, '跌停板，卖不掉')
                     continue
                 if cur_order.buy_reason == 'SHORT':
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
                 if cur_order.buy_reason == 'LONG':
-                    # is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
-                    is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
+                    is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+                    # is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
                 if is_sell:
                     CASH += cur_order.buy_count * today_market.open
                     order_df.loc[idx, 'sell_date'] = today
@@ -307,8 +309,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
             is_buy = False
             # 指数就不要过滤器了
             if True:
-                # if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
-                if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
+                if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
+                # if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
                     is_buy = True
                     buy_reason = 'LONG'
                 # elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
@@ -352,7 +354,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
             # buy_count = int(CASH / buy_price)
 
             if buy_count > 0:
-                if today_market.c_o_pct_chg > 0.1 and symbol in HS300:
+                if today_market.c_o_pct_chg > 0.1:
                     # print(today, symbol, '涨停板，买不进')
                     continue
 
@@ -510,7 +512,8 @@ def when_done(r):
     # info('when_done')
     # info(r.result())
     res = r.result()
-    info(res[2])
+    # info(res[2])
+    info('done %s %s' % (res[2]['ROLLMAX'], res[2]['ROLLMIN']))
     global score_df
     score_df = score_df.append(res[2], ignore_index=True)
     return r.result()
@@ -531,7 +534,7 @@ def main():
     # n_list = [(90, 180, 0)] * 10
     # n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
     n_list = [(30, 30, 1)] * 2
-    n_list = list(itertools.product([x * 10 for x in range(1, 21)], [x * 10 for x in range(16, 21)], [1]))
+    n_list = list(itertools.product([x * 10 for x in range(1, 21)], [x * 10 for x in range(1, 21)], [1]))
     # n_list = [(60, 60, 1)] * 10
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
