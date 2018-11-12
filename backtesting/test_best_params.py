@@ -38,16 +38,21 @@ NASDAQ100 = CONF['NASDAQ100']
 HS300_df = pd.read_csv('../database/HS300IDX_ALL.csv')
 HS300 = list(set(HS300_df.con_code))
 HS300 = [x.split('.')[0] for x in HS300]
+ZZ500_df = pd.read_csv('../database/ZZ500IDX_ALL.csv')
+ZZ500 = list(set(ZZ500_df.con_code))
+ZZ500 = [x.split('.')[0] for x in ZZ500]
 
-BENCHMARK = '399300'
-BENCHMARK = '163407'
-TARGET = HS300
-TARGET = ['399300']
-TARGET = ['163407']
+# BENCHMARK = '399300'
+# BENCHMARK = '163407'
+BENCHMARK = '000905'
+# TARGET = HS300
+# TARGET = ['399300']
+# TARGET = ['163407']
+TARGET = ZZ500
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2011-01-01'
+start_date = '2013-01-01'
 end_date = '2018-11-01'
 
 TURTLE_POS = 10
@@ -64,7 +69,7 @@ IS_TAX = False
 IS_SLIPPAGE = False
 IS_RANDOM_BUY = True
 IS_FILTER = False
-IS_MARKETUP = True
+IS_MARKETUP = False
 IS_BUYBENCHMARK = True
 IS_SHOWBUYLIST = True
 START_MONEY = 100000
@@ -157,6 +162,7 @@ def get_stock_df_dict(TURTLE_N):
 
 
 def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
+    TARGET = symbol_list
     TURTLE_POS = TURTLE_POS
     TURTLE_LONG_BUY_N = TURTLE_N[0]
     TURTLE_LONG_SELL_N = TURTLE_N[1]
@@ -276,17 +282,29 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
         buy_list = []
 
         # 更新指数成分
-        # NEW_TARGET_df = HS300_df[HS300_df.trade_date == int(today.strftime('%Y%m%d'))]
-        # if len(NEW_TARGET_df) != 0:
-        #     NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
-        #     if sorted(NEW_TARGET) != sorted(symbol_list):
-        #         # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
-        #         symbol_list = NEW_TARGET
-        # else:
-        #     pass
+        if BENCHMARK == '399300':
+            NEW_TARGET_df = HS300_df[HS300_df.trade_date == int(today.strftime('%Y%m%d'))]
+            if len(NEW_TARGET_df) != 0:
+                NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
+                if sorted(NEW_TARGET) != sorted(TARGET):
+                    # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
+                    TARGET = NEW_TARGET
+            else:
+                pass
+
+        if BENCHMARK == '000905':
+            NEW_TARGET_df = ZZ500_df[ZZ500_df.trade_date == int(today.strftime('%Y%m%d'))]
+            if len(NEW_TARGET_df) != 0:
+                NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
+                if sorted(NEW_TARGET) != sorted(TARGET):
+                    # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
+                    TARGET = NEW_TARGET
+            else:
+                pass
 
         # 遍历标的，判断和执行买入
-        for symbol in symbol_list:
+        # for symbol in symbol_list:
+        for symbol in TARGET:
             if symbol not in stock_df_dict:
                 continue
 
@@ -527,14 +545,14 @@ def main():
     pos_list = [x * 5 for x in range(4, 6)]
     pos_list = [10, 20, 30, 40, 50]
     pos_list = [50] * 10
-    pos_list = [1]
+    pos_list = [50]
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
     n_list = [(90, 180, 1)] * 10
     # n_list = [(90, 180, 0)] * 10
     # n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
     n_list = [(30, 30, 1)] * 2
-    n_list = list(itertools.product([x * 10 for x in range(1, 21)], [x * 10 for x in range(1, 21)], [1]))
+    n_list = list(itertools.product([x * 10 for x in range(1, 21)], [x * 10 for x in range(1, 2)], [1]))
     # n_list = [(60, 60, 1)] * 10
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
@@ -555,5 +573,5 @@ def main():
 
 if __name__ == '__main__':
     set_log(INFO)
-    # main()
+    main()
     # work(10, (60, 60, 1))
