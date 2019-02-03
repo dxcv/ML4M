@@ -44,16 +44,18 @@ ZZ500 = [x.split('.')[0] for x in ZZ500]
 
 # BENCHMARK = '399300'
 # BENCHMARK = '163407'
-BENCHMARK = '000905'
+# BENCHMARK = '000905'
+BENCHMARK = 'NDX'
 # TARGET = HS300
 # TARGET = ['399300']
 # TARGET = ['163407']
-TARGET = ZZ500
+TARGET = ['NDX']
+# TARGET = ZZ500
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2013-01-01'
-end_date = '2018-11-01'
+start_date = '2010-01-01'
+end_date = '2019-01-15'
 
 TURTLE_POS = 10
 ### Turtle System One - Short
@@ -158,6 +160,7 @@ def get_stock_df_dict(TURTLE_N):
         stock_df.dropna(how='any', inplace=True)
 
         stock_df_dict[symbol] = stock_df
+        # print(stock_df)
     return stock_df_dict
 
 
@@ -243,8 +246,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                 if cur_order.buy_reason == 'SHORT':
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
                 if cur_order.buy_reason == 'LONG':
-                    is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
-                    # is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
+                    # is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+                    is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
                 if is_sell:
                     CASH += cur_order.buy_count * today_market.open
                     order_df.loc[idx, 'sell_date'] = today
@@ -327,8 +330,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
             is_buy = False
             # 指数就不要过滤器了
             if True:
-                if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
-                # if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
+                # if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
+                if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
                     is_buy = True
                     buy_reason = 'LONG'
                 # elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
@@ -546,13 +549,14 @@ def main():
     pos_list = [10, 20, 30, 40, 50]
     pos_list = [50] * 10
     pos_list = [50]
+    pos_list = [1]
     n_list = [(x * 5, x * 5) for x in range(1, 21)]
     n_list = [(30, 60), (30, 90), (30, 180), (60, 90), (60, 180), (90, 180)]
     n_list = [(90, 180, 1)] * 10
     # n_list = [(90, 180, 0)] * 10
     # n_list = [(90, 180, round(0.1 * x, 1)) for x in range(1, 21)]
     n_list = [(30, 30, 1)] * 2
-    n_list = list(itertools.product([x * 10 for x in range(1, 21)], [x * 10 for x in range(1, 2)], [1]))
+    n_list = list(itertools.product([x * 10 for x in range(1, 21)], [x * 10 for x in range(1, 21)], [1]))
     # n_list = [(60, 60, 1)] * 10
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
