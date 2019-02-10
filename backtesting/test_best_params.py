@@ -42,22 +42,22 @@ ZZ500_df = pd.read_csv('../database/ZZ500IDX_ALL.csv')
 ZZ500 = list(set(ZZ500_df.con_code))
 ZZ500 = [x.split('.')[0] for x in ZZ500]
 
-# BENCHMARK = '399300'
+BENCHMARK = '399300'
 # BENCHMARK = '163407'
 # BENCHMARK = '000905'
-BENCHMARK = 'NDX'
+# BENCHMARK = 'NDX'
 # TARGET = HS300
-# TARGET = ['399300']
+TARGET = ['399300']
 # TARGET = ['163407']
-TARGET = ['NDX']
+# TARGET = ['NDX']
 # TARGET = ZZ500
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2010-01-01'
-end_date = '2019-01-15'
+start_date = '2011-01-19'
+end_date = '2018-11-01'
 
-TURTLE_POS = 10
+TURTLE_POS = 1
 ### Turtle System One - Short
 TURTLE_SHORT_BUY_N = 20
 TURTLE_SHORT_SELL_N = 20
@@ -245,6 +245,7 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                     continue
                 if cur_order.buy_reason == 'SHORT':
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
+                    pass
                 if cur_order.buy_reason == 'LONG':
                     # is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
                     is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
@@ -284,26 +285,26 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
         #     benchmark_yesterday_market = stock_df_dict[BENCHMARK].loc[:today].iloc[-1]
         buy_list = []
 
-        # 更新指数成分
-        if BENCHMARK == '399300':
-            NEW_TARGET_df = HS300_df[HS300_df.trade_date == int(today.strftime('%Y%m%d'))]
-            if len(NEW_TARGET_df) != 0:
-                NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
-                if sorted(NEW_TARGET) != sorted(TARGET):
-                    # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
-                    TARGET = NEW_TARGET
-            else:
-                pass
+        # # 更新指数成分
+        # if BENCHMARK == '399300':
+        #     NEW_TARGET_df = HS300_df[HS300_df.trade_date == int(today.strftime('%Y%m%d'))]
+        #     if len(NEW_TARGET_df) != 0:
+        #         NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
+        #         if sorted(NEW_TARGET) != sorted(TARGET):
+        #             # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
+        #             TARGET = NEW_TARGET
+        #     else:
+        #         pass
 
-        if BENCHMARK == '000905':
-            NEW_TARGET_df = ZZ500_df[ZZ500_df.trade_date == int(today.strftime('%Y%m%d'))]
-            if len(NEW_TARGET_df) != 0:
-                NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
-                if sorted(NEW_TARGET) != sorted(TARGET):
-                    # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
-                    TARGET = NEW_TARGET
-            else:
-                pass
+        # if BENCHMARK == '000905':
+        #     NEW_TARGET_df = ZZ500_df[ZZ500_df.trade_date == int(today.strftime('%Y%m%d'))]
+        #     if len(NEW_TARGET_df) != 0:
+        #         NEW_TARGET = [x.split('.')[0] for x in list(NEW_TARGET_df.con_code)]
+        #         if sorted(NEW_TARGET) != sorted(TARGET):
+        #             # print(today, 'CHANGE TARGET', len(NEW_TARGET_df))
+        #             TARGET = NEW_TARGET
+        #     else:
+        #         pass
 
         # 遍历标的，判断和执行买入
         # for symbol in symbol_list:
@@ -578,4 +579,4 @@ def main():
 if __name__ == '__main__':
     set_log(INFO)
     main()
-    # work(10, (60, 60, 1))
+    # work(1, (60, 60, 1))
