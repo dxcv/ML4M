@@ -54,8 +54,8 @@ TARGET = ['399300']
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2011-01-19'
-end_date = '2018-11-01'
+start_date = '2005-01-01'
+end_date = '2019-03-01'
 
 TURTLE_POS = 1
 ### Turtle System One - Short
@@ -247,8 +247,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
                     pass
                 if cur_order.buy_reason == 'LONG':
-                    # is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
-                    is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
+                    is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+                    # is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
                 if is_sell:
                     CASH += cur_order.buy_count * today_market.open
                     order_df.loc[idx, 'sell_date'] = today
@@ -331,8 +331,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
             is_buy = False
             # 指数就不要过滤器了
             if True:
-                # if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
-                if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
+                if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
+                # if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
                     is_buy = True
                     buy_reason = 'LONG'
                 # elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
