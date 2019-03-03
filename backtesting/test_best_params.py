@@ -44,18 +44,21 @@ ZZ500 = [x.split('.')[0] for x in ZZ500]
 
 BENCHMARK = '399300'
 # BENCHMARK = '163407'
-# BENCHMARK = '000905'
+BENCHMARK = '000905'
+# BENCHMARK = '512500'
 # BENCHMARK = 'NDX'
 # TARGET = HS300
 TARGET = ['399300']
 # TARGET = ['163407']
+TARGET = ['000905']
 # TARGET = ['NDX']
 # TARGET = ZZ500
+# TARGET = ['512500']
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2005-01-01'
-end_date = '2019-03-01'
+start_date = '2008-01-01'
+end_date = '2019-04-01'
 
 TURTLE_POS = 1
 ### Turtle System One - Short
@@ -149,12 +152,12 @@ def get_stock_df_dict(TURTLE_N):
         stock_df['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).max()
         stock_df['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).min()
         # stock_df['MA250'] = stock_df['open'].rolling(250).mean()
-        stock_df['MA180'] = stock_df['open'].rolling(180).mean()
+        # stock_df['MA180'] = stock_df['open'].rolling(180).mean()
         # stock_df['MA90'] = stock_df['open'].rolling(90).mean()
-        stock_df['MA60'] = stock_df['open'].rolling(60).mean()
+        # stock_df['MA60'] = stock_df['open'].rolling(60).mean()
         # stock_df['MA30'] = stock_df['open'].rolling(30).mean()
-        stock_df['MA%d' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).mean()
-        stock_df['MA%d' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).mean()
+        # stock_df['MA%d' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).mean()
+        # stock_df['MA%d' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).mean()
 
         # 减少数据
         stock_df.dropna(how='any', inplace=True)
