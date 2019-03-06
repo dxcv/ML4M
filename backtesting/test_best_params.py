@@ -43,22 +43,24 @@ ZZ500 = list(set(ZZ500_df.con_code))
 ZZ500 = [x.split('.')[0] for x in ZZ500]
 
 BENCHMARK = '399300'
-# BENCHMARK = '163407'
-BENCHMARK = '000905'
+BENCHMARK = '163407'
+# BENCHMARK = '000905'
 # BENCHMARK = '512500'
+BENCHMARK = '161017'
 # BENCHMARK = 'NDX'
 # TARGET = HS300
 TARGET = ['399300']
-# TARGET = ['163407']
-TARGET = ['000905']
+TARGET = ['163407']
+# TARGET = ['000905']
 # TARGET = ['NDX']
 # TARGET = ZZ500
 # TARGET = ['512500']
+TARGET = ['161017']
 ALL_TARGET = TARGET[:]
 
 ### 时间设置
-start_date = '2008-01-01'
-end_date = '2019-04-01'
+start_date = '2012-01-01'
+end_date = '2019-01-01'
 
 TURTLE_POS = 1
 ### Turtle System One - Short
@@ -156,8 +158,8 @@ def get_stock_df_dict(TURTLE_N):
         # stock_df['MA90'] = stock_df['open'].rolling(90).mean()
         # stock_df['MA60'] = stock_df['open'].rolling(60).mean()
         # stock_df['MA30'] = stock_df['open'].rolling(30).mean()
-        # stock_df['MA%d' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).mean()
-        # stock_df['MA%d' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).mean()
+        stock_df['MA%d' % TURTLE_LONG_BUY_N] = stock_df['open'].rolling(TURTLE_LONG_BUY_N).mean()
+        stock_df['MA%d' % TURTLE_LONG_SELL_N] = stock_df['open'].rolling(TURTLE_LONG_SELL_N).mean()
 
         # 减少数据
         stock_df.dropna(how='any', inplace=True)
@@ -195,8 +197,14 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
         'ops_date', 'ops', 'symbol', 'count', 'price', 'reason', 'profit'
     ])
 
+    df_start_day = stock_df_dict[BENCHMARK].head(1).index[0].strftime('%Y-%m-%d')
+    if df_start_day > start_date:
+        run_start_day = df_start_day
+    else:
+        run_start_day = start_date
+
     # 时间序列
-    for today in pd.period_range(start=start_date, end=end_date, freq='D'):
+    for today in pd.period_range(start=run_start_day, end=end_date, freq='D'):
         count_day += 1
 
         # 每年年初计算回报率
@@ -250,8 +258,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
                     is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_SHORT_SELL_N])
                     pass
                 if cur_order.buy_reason == 'LONG':
-                    is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
-                    # is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
+                    # is_sell = (today_market.open <= today_market['ROLLING_%d_MIN' % TURTLE_LONG_SELL_N])
+                    is_sell = (today_market['MA%d' % TURTLE_LONG_BUY_N] < today_market['MA%d' % TURTLE_LONG_SELL_N])
                 if is_sell:
                     CASH += cur_order.buy_count * today_market.open
                     order_df.loc[idx, 'sell_date'] = today
@@ -334,8 +342,8 @@ def run_turtle(symbol_list, stock_df_dict, TURTLE_POS, TURTLE_N):
             is_buy = False
             # 指数就不要过滤器了
             if True:
-                if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
-                # if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
+                # if today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_LONG_BUY_N]:
+                if today_market['MA%d' % TURTLE_LONG_BUY_N] >= today_market['MA%d' % TURTLE_LONG_SELL_N]:
                     is_buy = True
                     buy_reason = 'LONG'
                 # elif False and today_market.open >= today_market['ROLLING_%d_MAX' % TURTLE_SHORT_BUY_N]:
@@ -484,15 +492,15 @@ def work(TURTLE_POS, TURTLE_N):
     FREECASH_DAY = len(df[df['CASH_TURTLE'] > (df['PROPERTY_TURTLE'] / TURTLE_POS)])
 
     output_str = ''
-    for y in range(int(start_date.split('-')[0]), int(end_date.split('-')[0]) + 1, 1):
-        y_df = df.loc['%d-01-01' % y:'%d-01-01' % (y + 1)]
-        y_algo = y_df['PROPERTY_TURTLE'].pct_change()
-        y_benchmark = y_df.open.pct_change()
-        result = '%d-%d,%.3f,%.3f,%.3f,%.3f' % (
-            y, y + 1, emp.cum_returns(y_algo)[-1], emp.cum_returns(y_benchmark)[-1], emp.max_drawdown(y_algo), emp.max_drawdown(y_benchmark)
-        )
-        output_str += result
-        output_str += ';'
+    # for y in range(int(start_date.split('-')[0]), int(end_date.split('-')[0]) + 1, 1):
+    #     y_df = df.loc['%d-01-01' % y:'%d-01-01' % (y + 1)]
+    #     y_algo = y_df['PROPERTY_TURTLE'].pct_change()
+    #     y_benchmark = y_df.open.pct_change()
+    #     result = '%d-%d,%.3f,%.3f,%.3f,%.3f' % (
+    #         y, y + 1, emp.cum_returns(y_algo)[-1], emp.cum_returns(y_benchmark)[-1], emp.max_drawdown(y_algo), emp.max_drawdown(y_benchmark)
+    #     )
+    #     output_str += result
+    #     output_str += ';'
 
     df = order_df.copy()
     df['pro_pct'] = (df.sell_price - df.buy_price) / df.buy_price
@@ -564,16 +572,17 @@ def main():
     # n_list = [(60, 60, 1)] * 10
     # n_list = [(60, 90), (60, 180), (60, 250), (90, 180), (90, 250), (180, 250)]
     # n_list = [(180, 250)]
+    n_list = [t for t in n_list if t[0] < t[1]]
     print(pos_list)
     print(n_list)
     params = itertools.product(pos_list, n_list)
-    with ProcessPoolExecutor(1) as pool:
+    with ProcessPoolExecutor(2) as pool:
         for pos, n in params:
             info('submit %s %s' % (pos, n))
             future_result = pool.submit(work, pos, n)
             future_result.add_done_callback(when_done)
 
-    print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'ROLLMIN', 'LASTYEAR_RETURN', 'RETURN', 'MAXDROPDOWN']])
+    print(score_df.loc[:, ['TURTLE_POS', 'ROLLMAX', 'ROLLMIN', 'LASTYEAR_RETURN', 'RETURN', 'MAXDROPDOWN', 'BENCHMARK_RETURN']])
     print(score_df.describe())
     csv_file = '../database/%s.csv' % time.strftime('%Y%m%d-%H%M%S')
     score_df.to_csv(csv_file, index=False)
@@ -582,4 +591,4 @@ def main():
 if __name__ == '__main__':
     set_log(INFO)
     main()
-    # work(1, (60, 60, 1))
+    # work(1, (60, 30, 1))
