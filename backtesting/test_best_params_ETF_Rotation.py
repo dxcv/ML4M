@@ -36,7 +36,7 @@ CRYPTOCURRENCY = list(CRYPTOCURRENCY.keys())
 NASDAQ100 = CONF['NASDAQ100']
 
 BENCHMARK = '399300'
-ROTATION_LIST = ['399300', '000905', '399006', '000012']
+ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
 
 ### 时间设置
 start_date = '2005-01-01'
@@ -97,6 +97,9 @@ def get_stock_df_dict(N):
         # 筛选字段
         stock_df = stock_df.loc[:, ['date', 'open', 'close']]
 
+        # 特殊处理，用收盘价判断和交易
+        # stock_df['open'] = stock_df['close']
+
         # 去掉Nasdaq行情首行的当天行情
         if symbol in NASDAQ100:
             stock_df = stock_df.drop([0])
@@ -117,6 +120,8 @@ def get_stock_df_dict(N):
         stock_df['o_pct_chg'] = stock_df.open.pct_change(1)
         stock_df['c_o_pct_chg'] = (stock_df.open - stock_df.close.shift(1)) / stock_df.close.shift(1)
         stock_df['N_chg'] = stock_df.open.pct_change(N)
+        # 特殊处理，用昨天收盘价做判定
+        stock_df['N_chg'] = (stock_df.close.shift(1) - stock_df.close.shift(N)) / stock_df.close.shift(N)
         # stock_df['MA%d' % M] = stock_df['open'].rolling(M).mean()
 
         # 减少数据
@@ -167,7 +172,7 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K):
         if today not in stock_df_dict[BENCHMARK].index:
             continue
 
-        benchmark_today_market = stock_df_dict[BENCHMARK].loc[today]
+        # benchmark_today_market = stock_df_dict[BENCHMARK].loc[today]
 
         # 计算标的今天的N天涨跌幅，找到买入目标
         N_chg_list = []
@@ -282,9 +287,9 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K):
             )
         show_df.loc[today, 'PROPERTY'] = PROPERTY
 
-        
+
     # 最后一天，清仓
-    order_arr = order_df.to_records(index=False)
+    # order_arr = order_df.to_records(index=False)
     for idx in order_df[order_df['sell_price'] == 0].index:
         cur_order = order_df.loc[idx]
         symbol = cur_order['symbol']
@@ -312,7 +317,6 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K):
 
 
 def work(PARAMS):
-    # info(PARAMS)
     info('work %s' % str(PARAMS))
     stock_df_dict = None
     show_df = None
@@ -425,8 +429,8 @@ def work2(pos, n):
 def main():
     s_type = ['ETF_ROTATION']
     pos_list = [1]
-    n_list = list(range(10, 31))
-    k_list = [0, 1, 2, 3, 4, 5]
+    n_list = list(range(1, 31))
+    k_list = [0, 1, 2, 3, 4, 5, 6, 7]
 
     print(s_type)
     print(pos_list)
@@ -434,7 +438,7 @@ def main():
     print(k_list)
     params_list = itertools.product(s_type, pos_list, n_list, k_list)
 
-    with ProcessPoolExecutor(1) as pool:
+    with ProcessPoolExecutor(2) as pool:
         for params in params_list:
             info('submit %s' % str(params))
             future_result = pool.submit(work, params)
