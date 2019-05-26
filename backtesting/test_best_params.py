@@ -593,7 +593,7 @@ def main():
     print(n_list)
     params = itertools.product(s_type, pos_list, n_list)
 
-    with ProcessPoolExecutor(1) as pool:
+    with ProcessPoolExecutor(2) as pool:
         for t, pos, n in params:
             info('submit %s %s %s' % (t, pos, n))
             future_result = pool.submit(work, t, pos, n)
