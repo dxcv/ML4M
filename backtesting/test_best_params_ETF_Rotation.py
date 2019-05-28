@@ -36,10 +36,12 @@ CRYPTOCURRENCY = list(CRYPTOCURRENCY.keys())
 NASDAQ100 = CONF['NASDAQ100']
 
 BENCHMARK = '399300'
+BENCHMARK = 'BITCOIN'
 ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
+ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER']
 
 ### 时间设置
-start_date = '2005-01-01'
+start_date = '2017-01-01'
 end_date = '2019-05-01'
 # end_date = time.strftime('%Y-%m-%d')
 
@@ -197,6 +199,10 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K):
         if target_symbol == holding_symbol:
             is_change = False
         if cur_order is not None and today - cur_order.buy_date < K:
+            is_change = False
+        if holding_symbol != '' and today not in stock_df_dict[holding_symbol].index:
+            is_change = False
+        if today not in stock_df_dict[target_symbol].index:
             is_change = False
 
         # 当前持有标的和买入目标不相同，或者今天是首日空仓，则今天交易，换仓/全仓
