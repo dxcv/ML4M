@@ -36,20 +36,21 @@ CRYPTOCURRENCY = list(CRYPTOCURRENCY.keys())
 NASDAQ100 = CONF['NASDAQ100']
 
 BENCHMARK = '399300'
-BENCHMARK = 'BITCOIN'
+# BENCHMARK = 'BITCOIN'
 ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
-ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER']
+ROTATION_LIST = ['399300', '000905', '399006', '000012']
+# ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER']
 
 ### 时间设置
-start_date = '2017-01-01'
+start_date = '2011-01-01'
 end_date = '2019-05-01'
 # end_date = time.strftime('%Y-%m-%d')
 
 ### ETF Rotation System
 POS = 1
-N = 13
-M = 100
-K = 0
+# N = 13
+# M = 100
+# K = 0
 
 ### 业务设置
 START_MONEY = 100000
@@ -65,6 +66,7 @@ score_df = pd.DataFrame(columns=[
     'POS',
     'N',
     'K',
+    'M',
     'ORDER',
     'STOCK',
     'RETURN_ALGO',
@@ -85,7 +87,7 @@ score_df = pd.DataFrame(columns=[
 ])
 
 
-def get_stock_df_dict(N):
+def get_stock_df_dict(N, M):
     stock_df_dict = {}
 
     for symbol in ROTATION_LIST:
@@ -121,10 +123,10 @@ def get_stock_df_dict(N):
         # 计算每天涨跌幅
         stock_df['o_pct_chg'] = stock_df.open.pct_change(1)
         stock_df['c_o_pct_chg'] = (stock_df.open - stock_df.close.shift(1)) / stock_df.close.shift(1)
-        stock_df['N_chg'] = stock_df.open.pct_change(N)
+        # stock_df['N_chg'] = stock_df.open.pct_change(N)
         # 特殊处理，用昨天收盘价做判定
         stock_df['N_chg'] = (stock_df.close.shift(1) - stock_df.close.shift(N)) / stock_df.close.shift(N)
-        # stock_df['MA%d' % M] = stock_df['open'].rolling(M).mean()
+        stock_df['MA%d' % M] = stock_df['open'].rolling(M).mean()
 
         # 减少数据
         stock_df.dropna(how='any', inplace=True)
@@ -133,7 +135,7 @@ def get_stock_df_dict(N):
     return stock_df_dict
 
 
-def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K):
+def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
     PROPERTY = START_MONEY
     CASH = START_MONEY
     count_day = 0
@@ -177,16 +179,33 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K):
         # benchmark_today_market = stock_df_dict[BENCHMARK].loc[today]
 
         # 计算标的今天的N天涨跌幅，找到买入目标
+        # N_chg_list = []
+        # for symbol in ROTATION_LIST:
+        #     # 部分标的早期不存在
+        #     if today not in stock_df_dict[symbol].index:
+        #         N_chg_list.append(-999)
+        #     else:
+        #         today_market = stock_df_dict[symbol].loc[today]
+        #         N_chg_list.append(today_market.N_chg)
+        # max_N_chg = max(N_chg_list)
+        # target_symbol = ROTATION_LIST[N_chg_list.index(max_N_chg)]
+
+        # 计算标的今天的N天涨跌幅，找到买入目标
         N_chg_list = []
         for symbol in ROTATION_LIST:
             # 部分标的早期不存在
             if today not in stock_df_dict[symbol].index:
+                N_chg_list.append(-999)
+            elif symbol == '000012':
                 N_chg_list.append(-999)
             else:
                 today_market = stock_df_dict[symbol].loc[today]
                 N_chg_list.append(today_market.N_chg)
         max_N_chg = max(N_chg_list)
         target_symbol = ROTATION_LIST[N_chg_list.index(max_N_chg)]
+        today_market = stock_df_dict[target_symbol].loc[today]
+        if today_market.open < today_market['MA%d' % M]:
+            target_symbol = '000012'
 
         # 判断当前持有标的，和买入目标，是否相同，相同则今天不交易
         cur_order = None
@@ -332,11 +351,12 @@ def work(PARAMS):
     POS = PARAMS[1]
     N = PARAMS[2]
     K = PARAMS[3]
+    M = PARAMS[4]
     global ROTATION_LIST
     ROTATION_LIST = ROTATION_LIST
 
-    stock_df_dict = get_stock_df_dict(N)
-    show_df, order_df, PROPERTY = run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K)
+    stock_df_dict = get_stock_df_dict(N, M)
+    show_df, order_df, PROPERTY = run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M)
 
     df = show_df.dropna(how='any', inplace=False).copy()
     df = df.loc[start_date:end_date]
@@ -376,6 +396,7 @@ def work(PARAMS):
         'POS': POS,
         'N': N,
         'K': K,
+        'M': M,
         'ORDER': len(order_df),
         'STOCK': buy_stock_count,
         'RETURN_ALGO': emp.cum_returns(algo)[-1],
@@ -414,7 +435,7 @@ def work(PARAMS):
 
     score_sr['WINRATE_YEARLY'] = ALGO_WIN_YEAR_COUNT / YEAR_COUNT
 
-    return PARAMS, score_sr
+    return PARAMS, score_sr, order_df
 
 
 def when_done(r):
@@ -422,7 +443,7 @@ def when_done(r):
     # info(r.result())
     res = r.result()
     # info(res[2])
-    info('done N=%s K=%s' % (res[1]['N'], res[1]['K']))
+    info('done N=%s K=%s, M=%s' % (res[1]['N'], res[1]['K'], res[1]['M']))
     global score_df
     score_df = score_df.append(res[1], ignore_index=True)
     return r.result()
@@ -437,12 +458,15 @@ def main():
     pos_list = [1]
     n_list = list(range(1, 31))
     k_list = [0, 1, 2, 3, 4, 5, 6, 7]
+    k_list = [0]
+    m_list = list(range(5, 31))
 
     print(s_type)
     print(pos_list)
     print(n_list)
     print(k_list)
-    params_list = itertools.product(s_type, pos_list, n_list, k_list)
+    print(m_list)
+    params_list = itertools.product(s_type, pos_list, n_list, k_list, m_list)
 
     with ProcessPoolExecutor(2) as pool:
         for params in params_list:
@@ -450,7 +474,7 @@ def main():
             future_result = pool.submit(work, params)
             future_result.add_done_callback(when_done)
 
-    print(score_df.loc[:, ['POS', 'N', 'K', 'RETURN_ALGO', 'RETURN_BENC', 'MAXDROPDOWN_ALGO', 'MAXDROPDOWN_BENC', 'WINRATE_ORDER', 'WINRATE_YEARLY']])
+    print(score_df.loc[:, ['POS', 'N', 'K', 'M', 'RETURN_ALGO', 'RETURN_BENC', 'MAXDROPDOWN_ALGO', 'MAXDROPDOWN_BENC', 'WINRATE_ORDER', 'WINRATE_YEARLY']])
     print(score_df.describe())
     csv_file = '../database/%s.csv' % time.strftime('%Y%m%d-%H%M%S')
     score_df.to_csv(csv_file, index=False)
@@ -459,6 +483,7 @@ def main():
 if __name__ == '__main__':
     set_log(INFO)
     main()
-    # PARAMS, score_sr = work(('ETF_ROTATION', 1, 13, 0))
+    # PARAMS, score_sr, order_df = work(('ETF_ROTATION', 1, 13, 0, 13))
     # print(PARAMS)
     # print(score_sr)
+    # print(order_df)
