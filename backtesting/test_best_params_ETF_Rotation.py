@@ -36,13 +36,16 @@ CRYPTOCURRENCY = list(CRYPTOCURRENCY.keys())
 NASDAQ100 = CONF['NASDAQ100']
 
 BENCHMARK = '399300'
-# BENCHMARK = 'BITCOIN'
 ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
 ROTATION_LIST = ['399300', '000905', '399006', '000012']
-# ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER']
+SAFE = '000012'
+
+BENCHMARK = 'BITCOIN'
+ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
+SAFE = 'TETHER'
 
 ### 时间设置
-start_date = '2011-01-01'
+start_date = '2018-01-01'
 end_date = '2019-05-01'
 # end_date = time.strftime('%Y-%m-%d')
 
@@ -196,7 +199,7 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
             # 部分标的早期不存在
             if today not in stock_df_dict[symbol].index:
                 N_chg_list.append(-999)
-            elif symbol == '000012':
+            elif symbol == SAFE:
                 N_chg_list.append(-999)
             else:
                 today_market = stock_df_dict[symbol].loc[today]
@@ -205,7 +208,7 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
         target_symbol = ROTATION_LIST[N_chg_list.index(max_N_chg)]
         today_market = stock_df_dict[target_symbol].loc[today]
         if today_market.open < today_market['MA%d' % M]:
-            target_symbol = '000012'
+            target_symbol = SAFE
 
         # 判断当前持有标的，和买入目标，是否相同，相同则今天不交易
         cur_order = None
