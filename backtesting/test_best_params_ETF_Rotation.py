@@ -40,12 +40,12 @@ ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
 ROTATION_LIST = ['399300', '000905', '399006', '000012']
 SAFE = '000012'
 
-BENCHMARK = 'BITCOIN'
-ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
-SAFE = 'TETHER'
+# BENCHMARK = 'BITCOIN'
+# ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
+# SAFE = 'TETHER'
 
 ### 时间设置
-start_date = '2018-01-01'
+start_date = '2011-01-01'
 end_date = '2019-05-01'
 # end_date = time.strftime('%Y-%m-%d')
 
@@ -124,12 +124,13 @@ def get_stock_df_dict(N, M):
         stock_df.index = stock_df.index.to_period('D')
 
         # 计算每天涨跌幅
-        stock_df['o_pct_chg'] = stock_df.open.pct_change(1)
+        # stock_df['o_pct_chg'] = stock_df.open.pct_change(1)
         stock_df['c_o_pct_chg'] = (stock_df.open - stock_df.close.shift(1)) / stock_df.close.shift(1)
         # stock_df['N_chg'] = stock_df.open.pct_change(N)
         # 特殊处理，用昨天收盘价做判定
         stock_df['N_chg'] = (stock_df.close.shift(1) - stock_df.close.shift(N)) / stock_df.close.shift(N)
-        stock_df['MA%d' % M] = stock_df['open'].rolling(M).mean()
+        stock_df['y_close'] = stock_df.close.shift(1)
+        stock_df['MA%d' % M] = stock_df['close'].rolling(M).mean().shift(1)
 
         # 减少数据
         stock_df.dropna(how='any', inplace=True)
@@ -207,7 +208,7 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
         max_N_chg = max(N_chg_list)
         target_symbol = ROTATION_LIST[N_chg_list.index(max_N_chg)]
         today_market = stock_df_dict[target_symbol].loc[today]
-        if today_market.open < today_market['MA%d' % M]:
+        if today_market.y_close < today_market['MA%d' % M]:
             target_symbol = SAFE
 
         # 判断当前持有标的，和买入目标，是否相同，相同则今天不交易
@@ -459,10 +460,10 @@ def work2(pos, n):
 def main():
     s_type = ['ETF_ROTATION']
     pos_list = [1]
-    n_list = list(range(1, 31))
+    n_list = list(range(1, 41))
     k_list = [0, 1, 2, 3, 4, 5, 6, 7]
     k_list = [0]
-    m_list = list(range(5, 31))
+    m_list = list(range(1, 41))
 
     print(s_type)
     print(pos_list)
