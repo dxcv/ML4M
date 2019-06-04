@@ -40,14 +40,15 @@ ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
 ROTATION_LIST = ['399300', '000905', '399006', '000012']
 SAFE = '000012'
 
-# BENCHMARK = 'BITCOIN'
-# ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
-# SAFE = 'TETHER'
+BENCHMARK = 'BITCOIN'
+ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
+ROTATION_LIST = ['BITCOIN', 'EOS', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
+SAFE = ''
 
 ### 时间设置
-start_date = '2011-01-01'
-end_date = '2019-05-01'
-# end_date = time.strftime('%Y-%m-%d')
+start_date = '2018-01-01'
+# end_date = '2019-06-01'
+end_date = time.strftime('%Y-%m-%d')
 
 ### ETF Rotation System
 POS = 1
@@ -95,6 +96,8 @@ def get_stock_df_dict(N, M):
 
     for symbol in ROTATION_LIST:
         stock_data_file = '../database/market/%s.csv' % symbol
+        if symbol in CRYPTOCURRENCY:
+            stock_data_file = '../database/market/%s_OKEX.csv' % symbol
         try:
             stock_df = pd.read_csv(stock_data_file)
         except Exception as e:
@@ -171,6 +174,8 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
     for today in pd.period_range(start=run_start_day, end=end_date, freq='D'):
         count_day += 1
         is_change = True
+        buy_reason = ''
+        sell_reason = ''
 
         if yesterday is None:
             yesterday = today
@@ -211,6 +216,13 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
         if today_market.y_close < today_market['MA%d' % M]:
             target_symbol = SAFE
 
+        if target_symbol == SAFE:
+            buy_reason = 'SAFE'
+            sell_reason = 'SAFE'
+        else:
+            buy_reason = 'HIGH'
+            sell_reason = 'LOW'
+
         # 判断当前持有标的，和买入目标，是否相同，相同则今天不交易
         cur_order = None
         if len(order_df[(order_df['buy_count'] > 0) & (order_df['sell_price'] == 0)]) != 0:
@@ -225,7 +237,7 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
             is_change = False
         if holding_symbol != '' and today not in stock_df_dict[holding_symbol].index:
             is_change = False
-        if today not in stock_df_dict[target_symbol].index:
+        if target_symbol != '' and today not in stock_df_dict[target_symbol].index:
             is_change = False
 
         # 当前持有标的和买入目标不相同，或者今天是首日空仓，则今天交易，换仓/全仓
@@ -235,14 +247,14 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
             if today not in stock_df_dict[holding_symbol].index:
                 continue
             # 跌停板，卖不掉，其实基本不可能，因为是指数ETF轮动
-            if today_market.c_o_pct_chg < -0.1 and False:
+            if today_market.c_o_pct_chg < -0.1 and holding_symbol not in CRYPTOCURRENCY:
                 print(today, holding_symbol, '跌停板，卖不掉')
                 continue
             CASH += cur_order.buy_count * today_market.open
             idx = cur_order.name
             order_df.loc[idx, 'sell_date'] = today
             order_df.loc[idx, 'sell_price'] = today_market.open
-            order_df.loc[idx, 'sell_reason'] = 'EXIT'
+            order_df.loc[idx, 'sell_reason'] = sell_reason
             order_df.loc[idx, 'profit'] = (today_market.open - cur_order.buy_price) * cur_order.buy_count
 
             ops_df = ops_df.append(
@@ -252,13 +264,13 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
                     'symbol': holding_symbol,
                     'count': cur_order.buy_count,
                     'price': today_market.open,
-                    'reason': cur_order.buy_reason,
+                    'reason': sell_reason,
                     'profit': (today_market.open - cur_order.buy_price) * cur_order.buy_count,
                 },
                 ignore_index=True
             )
 
-        if is_change:
+        if is_change and target_symbol != '':
             # 开始执行买入
             today_market = stock_df_dict[target_symbol].loc[today]
 
@@ -267,13 +279,13 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
                 continue
 
             # 涨停板，买不进，其实基本不可能，因为是指数ETF轮动
-            if today_market.c_o_pct_chg > 0.1:
+            if today_market.c_o_pct_chg > 0.1 and holding_symbol not in CRYPTOCURRENCY:
                 print(today, target_symbol, '涨停板，买不进')
                 continue
 
             buy_price = today_market.open
             buy_count = int(CASH / buy_price)
-            buy_reason = 'CHANGE'
+            # buy_reason = 'CHANGE'
 
             if buy_count > 0:
                 CASH -= buy_count * buy_price
@@ -336,7 +348,7 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
                 'symbol': symbol,
                 'count': cur_order.buy_count,
                 'price': today_market.open,
-                'reason': cur_order.buy_reason,
+                'reason': 'LASTDAY',
                 'profit': (today_market.open - cur_order.buy_price) * cur_order.buy_count,
             },
             ignore_index=True
