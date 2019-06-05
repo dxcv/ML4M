@@ -32,7 +32,7 @@ class News_effect_price(object):
         pd.set_option('display.max_columns', None)
         # pd.set_option('display.max_rows', None)
 
-    def prepare_data(self, symbol):
+    def prepare_data(self, symbol, start_date='2016-01-01', end_date=''):
         """
         预处理数据。
         输入：Symbol，如TSLA等NASDAQ SYMBOL，或BITCOIN，具体值看../conf/conf.yaml
@@ -129,7 +129,11 @@ class News_effect_price(object):
         prepared_df = prepared_df.fillna(value={'news_count': 0, 'news_sentiment': 0, 'news_full_sentiment': 0})
 
         # 取较新的数据，比较贴近大形势
-        prepared_df = prepared_df.loc['2016-01-01':]
+        # prepared_df = prepared_df.loc['2016-01-01':]
+        if end_date != '':
+            prepared_df = prepared_df.loc[start_date:end_date]
+        else:
+            prepared_df = prepared_df.loc[start_date:]
         # prepared_df.reset_index(drop=False, inplace=True)
 
         debug(prepared_df.head(10))
@@ -137,7 +141,7 @@ class News_effect_price(object):
         debug(prepared_df.dtypes)
         return prepared_df
 
-    def train_news_effect_close_change(self, symbol, prepared_df):
+    def train_news_effect_close_change(self, symbol, prepared_df, dump=True):
         """
         【新闻情感的7天移动平均】和【成交量涨跌幅度的7天移动平均】对【收盘价的7天移动平均的涨跌】的影响
         """
@@ -146,14 +150,15 @@ class News_effect_price(object):
         train_name = 'MA_7d_sentiment_and_MA_7d_volumn_pct_change_to_MA_7d_close_rise_or_drop'
 
         # 计算7天移动平均
-        prepared_df['MA_7d_sentiment'] = prepared_df.news_sentiment.rolling(7).mean()
-        prepared_df['volumn_pct_change'] = prepared_df.volume.pct_change(1)
-        prepared_df['MA_7d_volumn_pct_change'] = prepared_df.volumn_pct_change.rolling(7).mean()
-        prepared_df['MA_7d_close'] = prepared_df.close.rolling(7).mean()
+        # prepared_df['MA_7d_sentiment'] = prepared_df.news_sentiment.rolling(7).mean()
+        prepared_df.loc[:, 'MA_7d_sentiment'] = prepared_df.news_sentiment.rolling(7).mean()
+        prepared_df.loc[:, 'volumn_pct_change'] = prepared_df.volume.pct_change(1)
+        prepared_df.loc[:, 'MA_7d_volumn_pct_change'] = prepared_df.volumn_pct_change.rolling(7).mean()
+        prepared_df.loc[:, 'MA_7d_close'] = prepared_df.close.rolling(7).mean()
 
         # 计算涨跌，作为分类标签
-        prepared_df['label'] = prepared_df['MA_7d_close'].diff(1).shift(-1)
-        prepared_df['label'] = prepared_df['label'].apply(lambda x: 'Rise' if x > 0 else 'Drop')
+        prepared_df.loc[:, 'label'] = prepared_df['MA_7d_close'].diff(1).shift(-1)
+        prepared_df.loc[:, 'label'] = prepared_df['label'].apply(lambda x: 'Rise' if x > 0 else 'Drop')
 
         # 去除空值记录
         prepared_df.dropna(axis=0, how='any', inplace=True)
@@ -187,50 +192,69 @@ class News_effect_price(object):
         test_set = scaler_arr[training_count + validation_count:, :]
         test_label = label_arr[training_count + validation_count:]
 
-        # 调优最佳K值
-        info('validating')
-        validation_result = []
-        for k in range(1, int(len(scaler_arr) ** 0.5), 1):
-            clf = neighbors.KNeighborsClassifier(
-                n_neighbors=k,
-                weights='uniform', algorithm='auto', leaf_size=1, p=2,
-                metric='minkowski', metric_params=None, n_jobs=1
-            )
-            clf.fit(training_set, training_label)
-            score = clf.score(validation_set, validation_label)
-            validation_result.append((score, k))
+        # # 调优最佳K值
+        # info('validating')
+        # validation_result = []
+        # for k in range(1, int(len(scaler_arr) ** 0.5), 1):
+        #     clf = neighbors.KNeighborsClassifier(
+        #         n_neighbors=k,
+        #         weights='uniform', algorithm='auto', leaf_size=1, p=2,
+        #         metric='minkowski', metric_params=None, n_jobs=1
+        #     )
+        #     clf.fit(training_set, training_label)
+        #     score = clf.score(validation_set, validation_label)
+        #     validation_result.append((score, k))
 
-        debug(sorted(validation_result)[::-1][0:10])
+        # debug(sorted(validation_result)[::-1][0:10])
 
-        # 最佳K值和得分
-        validation_score, k = sorted(validation_result)[::-1][0]
-        info('best k = %d, validation_score = %f' % (k, validation_score))
+        # # 最佳K值和得分
+        # validation_score, k = sorted(validation_result)[::-1][0]
+        # info('best k = %d, validation_score = %f' % (k, validation_score))
 
-        # 最优训练模型
-        clf = neighbors.KNeighborsClassifier(
-            n_neighbors=k,
-            weights='uniform', algorithm='auto', leaf_size=1, p=2,
-            metric='minkowski', metric_params=None, n_jobs=1
-        )
+        # # 最优训练模型
+        # clf = neighbors.KNeighborsClassifier(
+        #     n_neighbors=k,
+        #     weights='uniform', algorithm='auto', leaf_size=1, p=2,
+        #     metric='minkowski', metric_params=None, n_jobs=1
+        # )
+        # clf.fit(training_set, training_label)
+
+        # # 计算测试得分
+        # test_score = clf.score(test_set, test_label)
+        # info('test_score = %f' % test_score)
+
+        # # 持久化模型
+        # if dump:
+        #     pkl_file_list = joblib.dump(clf, './train_pkl/KNN_%s_K-%d_VALIDATIONSCORE-%f_TESTSCORE-%f_NAME-%s.pkl' % (symbol, k, validation_score, test_score, train_name))
+        #     info('model persistence, pkl_file_list = %s' % str(pkl_file_list))
+        #     return pkl_file_list
+        # else:
+        #     return clf
+
+        from sklearn import svm
+        clf = svm.SVC()
         clf.fit(training_set, training_label)
+        info(clf)
+        calc_label = clf.predict(test_set)
+        info(calc_label)
+        info(len(calc_label))
+        info(test_label)
+        info(len(test_label))
 
-        # 计算测试得分
-        test_score = clf.score(test_set, test_label)
-        info('test_score = %f' % test_score)
-
-        # 持久化模型
-        pkl_file_list = joblib.dump(clf, './train_pkl/KNN_%s_K-%d_VALIDATIONSCORE-%f_TESTSCORE-%f_NAME-%s.pkl' % (symbol, k, validation_score, test_score, train_name))
-        info('model persistence, pkl_file_list = %s' % str(pkl_file_list))
-        return pkl_file_list
+        diff_count = 0
+        for i in range(len(calc_label)):
+            if calc_label[i] != test_label[i]:
+                diff_count += 1
+        print(diff_count, len(calc_label), float(diff_count) / len(calc_label))
 
 
 if __name__ == '__main__':
     set_log(INFO)
     train = News_effect_price()
     symbol_dict = dict(NASDAQ, **CRYPTOCURRENCY)
-    # symbol_dict = CRYPTOCURRENCY
     for symbol in symbol_dict.keys():
         info('Training %s' % symbol)
         prepared_df = train.prepare_data(symbol)
-        pkl_file_list = train.train_news_effect_close_change(symbol, prepared_df)
+        pkl_file_list = train.train_news_effect_close_change(symbol, prepared_df, dump=True)
         info(pkl_file_list)
+        break
