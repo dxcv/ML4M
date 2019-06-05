@@ -12,6 +12,7 @@ import seaborn as sn
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
 from common.log import *
+from snownlp import SnowNLP
 
 
 class DataStructure(object):
@@ -88,6 +89,9 @@ class DataStructure(object):
         # news_data['publish_time'] = news_data['publish_time'].apply(lambda x: pd.Timestamp(x, freq='D'))
         news_data['publish_time'] = news_data['publish_time'].apply(lambda x: pd.Period(x, freq='D'))
 
+        # 注释掉，在这里不计算情感得分，转为在数据入库时就计算存储好
+        # news_data['sentiment'] = news_data['content'].apply(lambda x: SnowNLP(x).sentiments)
+
         # 创建索引
         # news_data.set_index(['publish_time'], inplace=True)
         # news_data = news_data.sort_index(axis=0, ascending=True)
@@ -97,21 +101,42 @@ class DataStructure(object):
         return news_data
 
     @staticmethod
+    def calc_sentiment():
+        """
+        Desc：
+            计算新闻情感
+        Parameter：
+        Return：
+            inX_lable：目标数据点inX的类别预测值
+
+        原理：
+            对于每一个在数据集中的数据点：
+                计算目标的数据点（需要分类的数据点）与该数据点的距离
+                将距离排序：从小到大
+                选取前K个最短距离
+                选取这K个中最多的分类类别
+                返回该类别来作为目标数据点的预测值
+        """
+        pass
+
+    @staticmethod
     def merge_data(coin_data, news_data):
         """
         合并数据货币和新闻数据。
         输入：数据货币DataFrame、新闻数据DataFrame
         输出：合并、处理后的DataFrame
         """
-        news_data = news_data.groupby('publish_time').size().to_frame(name='counts')
+        # news_data = news_data.groupby('publish_time').size().to_frame(name='counts')
+        news_data = news_data.groupby('publish_time').agg({'news_id': ['size'], 'sentiment': ['mean']})
+        news_data.columns = ['News_count', 'News_sentiment']
         debug(news_data.tail(10))
         debug(news_data.dtypes)
 
         # 用Merge等同于Join
         result_df = pd.merge(coin_data, news_data, how='left', left_index=True, right_index=True)
-        result_df = result_df.loc[:, ['Close', 'Volume', 'counts']]
         # result_df = result_df.loc[:, ['Close', 'Volume', 'counts']]
-        result_df = result_df.fillna(value={'counts': 0})
+        result_df = result_df.loc[:, ['Close', 'Volume', 'News_count', 'News_sentiment']]
+        result_df = result_df.fillna(value={'News_count': 0, 'News_sentiment': 0})
         debug(result_df.tail(10))
         return result_df
 
@@ -124,51 +149,17 @@ class DataStructure(object):
         # print(result_df)
         # plt.figure()
         # result_df.plot()
-        plt.show()
+        # plt.show()
 
 
 if __name__ == '__main__':
-    set_log(INFO)
+    set_log(DEBUG)
     from data_structure import DataStructure as ds
     coinmarketcap_html_file = '../database/coinmarketcap_eos_20170101_20180327.html'
     coin_data = ds.handle_coinmarketcap(coinmarketcap_html_file)
     # spider_36kr_data_file = '../database/36kr_EOS.txt'
     spider_36kr_data_file = '../database/36kr_区块链.txt'
     news_data = ds.handle_36kr(spider_36kr_data_file)
+    print(news_data)
     result_df = ds.merge_data(coin_data, news_data)
-    ds.draw_line(result_df)
-
-    from machine_learning.kNN import kNN
-
-    result_df = kNN.autoNorm(result_df)
     print(result_df)
-
-    result_df = result_df.reset_index(drop=True)
-    result_df['Close_change'] = 'UP'
-    for i in range(1, len(result_df), 1):
-        result_df.loc[i, 'Close_change'] = 'UP' if result_df.loc[i, 'Close'] > result_df.loc[i - 1, 'Close'] else 'DOWN'
-    result_df.set_index(['Close_change'], inplace=True)
-    print(result_df)
-
-    hoRatio = 0.5
-    numTestVecs = int(hoRatio * len(result_df))
-    errorCount = 0
-    for i in range(numTestVecs):
-        inX_lable = kNN.classify0(result_df[i:i + 1], result_df[0:], 10)
-        # info('Point %d, correct_label=%s, kNN_label=%s' % (i, inX_lable, result_df.iloc[i, :].name))
-        # debug(pd.Timestamp('now'))
-        if inX_lable != result_df.iloc[i, :].name:
-            errorCount += 1
-    info('numTestVecs: %d' % numTestVecs)
-    info('errorCount: %d' % errorCount)
-    info('errorRate: %f' % float(errorCount / numTestVecs))
-
-    price_up = result_df.loc[result_df.index == 'UP']
-    price_down = result_df.loc[result_df.index == 'DOWN']
-
-    ax = price_up.plot.scatter(
-        x='Volume', y='counts', label='price_up', color='DarkBlue')
-    ax = price_down.plot.scatter(
-        x='Volume', y='counts', label='price_down', color='LightGreen', ax=ax)
-
-    plt.show()
