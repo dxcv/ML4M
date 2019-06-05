@@ -144,6 +144,21 @@ CRYPTOCURRENCY:
   LITECOIN:
     - LITECOIN
     - 莱特币
+  TETHER:
+    - TETHER
+    - USDT
+    - 泰达币
+
+
+CRYPTOCURRENCYSYMBOL:
+  BTC
+  EOS
+  XLM
+  ETH
+  XRP
+  LTC
+  USDT
+
 
 NASDAQ100:
   - NDX
