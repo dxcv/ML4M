@@ -37,7 +37,8 @@ class MongoDB(object):
         self.tb = db[self.table]
 
     def read(self, filter):
-        cursor = self.tb.find_one()
+        # cursor = self.tb.find_one()
+        cursor = self.tb.find({})
         # return cursor.document
         return cursor
 
@@ -88,10 +89,12 @@ if __name__ == '__main__':
             }
     db = get_db('mongodb', 'test', 'news_36kr')
     print(db)
-    print(db.read(''))
-    print(db.write(news))
+    cursor = db.read('')
+    for doc in cursor:
+        print(doc)
+    # print(db.write(news))
 
-    db = get_db('textfile', '../database/', '36kr_EOS.txt')
-    print(db)
-    print(db.read(''))
-    print(db.write(news))
+    # db = get_db('textfile', '../database/', '36kr_Testdb.txt')
+    # print(db)
+    # print(db.read(''))
+    # print(db.write(news))
