@@ -153,7 +153,7 @@ class DataStructure(object):
 
 
 if __name__ == '__main__':
-    set_log(DEBUG)
+    set_log(INFO)
     from data_structure import DataStructure as ds
     coinmarketcap_html_file = '../database/coinmarketcap_eos_20170101_20180327.html'
     coin_data = ds.handle_coinmarketcap(coinmarketcap_html_file)

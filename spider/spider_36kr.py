@@ -4,6 +4,7 @@
 
 import os
 import sys
+import re
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
 
 import requests
@@ -27,13 +28,6 @@ class Spider36KR(object):
     def __init__(self):
         super(Spider36KR, self).__init__()
 
-        # 初始化和连接数据库
-        self.client = pymongo.MongoClient(MONGODB['IP'], MONGODB['PORT'])
-        self.db = self.client['test']
-        self.__init_mongodb()
-        self.tb = self.db['news_36kr']
-
-    def __init_mongodb(self):
         """
         初始化MongoDB
         """
@@ -123,7 +117,6 @@ class Spider36KR(object):
             # 接口没返回新闻，说明翻页超底了
             if len(news_list) == 0:
                 break
-
             for news in news_list:
                 news_count += 1
                 # 如果news_id-keyword已经存在数据库了，则无需处理
