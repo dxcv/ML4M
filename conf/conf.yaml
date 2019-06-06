@@ -151,13 +151,13 @@ CRYPTOCURRENCY:
 
 
 CRYPTOCURRENCYSYMBOL:
-  BTC
-  EOS
-  XLM
-  ETH
-  XRP
-  LTC
-  USDT
+  - BTC
+  - EOS
+  - XLM
+  - ETH
+  - XRP
+  - LTC
+  - USDT
 
 
 NASDAQ100:
