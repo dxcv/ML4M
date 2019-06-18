@@ -24,7 +24,7 @@ class Spider_okex(object):
     def __init__(self):
         super(Spider_okex, self).__init__()
 
-    def get_coin_data(self, symbol):
+    def get_coin_data(self, symbol, lite=False):
         """
         Desc：
             通过OKEX APIv3的/instruments/XXX-XXX/candles接口获取OKEX历史行情。
@@ -46,7 +46,11 @@ class Spider_okex(object):
         date_list = []
 
         # 生成时间区间节点
-        for y in range(2017, year_now + 1):
+        if lite:
+            start_year = year_now
+        else:
+            start_year = 2017
+        for y in range(start_year, year_now + 1):
             date_list.append('%d-01-01T00%%3A00%%3A00.000Z' % y)
             date_list.append('%d-07-01T00%%3A00%%3A00.000Z' % y)
         date_list.append('%d-01-01T00%%3A00%%3A00.000Z' % (y + 1))
@@ -60,6 +64,8 @@ class Spider_okex(object):
             debug(url)
             url_list.append(url)
         url_list.reverse()
+        if lite:
+            url_list = ['https://www.okex.me/api/spot/v3/instruments/%s-USDT/candles?granularity=86400' % symbol]
 
         # 构造headers
         # headers = {
@@ -71,8 +77,6 @@ class Spider_okex(object):
         for url in url_list:
             time.sleep(1)
             debug(url)
-            # r = requests.get(url, headers=headers)
-            # df = pd.read_html(r.text)[0]
             _df = pd.read_json(url)
             debug(len(_df))
             if len(df) == 0:
@@ -88,16 +92,23 @@ class Spider_okex(object):
         debug(df.tail(5))
 
         # 保存数据
-        datafile = '../database/market/%s_OKEX.csv' % symbol
+        if lite:
+            datafile = '../database/market/%s_OKEX_lite.csv' % symbol
+        else:
+            datafile = '../database/market/%s_OKEX.csv' % symbol
         info('Writting %s' % datafile)
         df.to_csv(datafile, header=['date', 'open', 'high', 'low', 'close', 'volume'], index=False, encoding='utf-8')
         return datafile
 
+    def update_coin_data(self, symbol):
+        pass
+
 
 if __name__ == '__main__':
-    set_log(INFO)
+    set_log(DEBUG)
     spider = Spider_okex()
-    spider.get_coin_data('EOS')
+    spider.get_coin_data('EOS', lite=True)
+    # spider.update_coin_data('EOS')
     # for symbol in CRYPTOCURRENCY:
     #     datafile = spider.get_coin_data(symbol, start_date, end_date)
     #     info(datafile)

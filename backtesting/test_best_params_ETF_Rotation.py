@@ -22,6 +22,7 @@ from common.log import *
 from common.config import Config
 from spider.spider_nasdaq import Spider_nasdaq
 from spider.spider_coinmarketcap import Spider_coinmarketcap
+from spider.spider_okex import Spider_okex
 
 CONF = Config('../conf/secret.yaml').data[0]
 ts_token = CONF['TUSHARE']['TOKEN']
@@ -31,9 +32,10 @@ pro = ts.pro_api()
 CONF = Config().data[0]
 MONGODB = CONF['MONGODB']
 NASDAQ = CONF['NASDAQ']
+NASDAQ100 = CONF['NASDAQ100']
 CRYPTOCURRENCY = CONF['CRYPTOCURRENCY']
 CRYPTOCURRENCY = list(CRYPTOCURRENCY.keys())
-NASDAQ100 = CONF['NASDAQ100']
+CRYPTOCURRENCYSYMBOL = CONF['CRYPTOCURRENCYSYMBOL']
 
 BENCHMARK = '399300'
 ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
@@ -45,8 +47,12 @@ ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
 ROTATION_LIST = ['BITCOIN', 'EOS', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
 SAFE = ''
 
+BENCHMARK = 'BTC'
+ROTATION_LIST = ['BTC', 'EOS', 'ETH', 'XRP', 'LTC']
+SAFE = ''
+
 ### 时间设置
-start_date = '2018-01-01'
+start_date = '2019-04-01'
 # end_date = '2019-06-01'
 end_date = time.strftime('%Y-%m-%d')
 
@@ -96,12 +102,13 @@ def get_stock_df_dict(N, M):
 
     for symbol in ROTATION_LIST:
         stock_data_file = '../database/market/%s.csv' % symbol
-        if symbol in CRYPTOCURRENCY:
+        if symbol in CRYPTOCURRENCYSYMBOL:
             stock_data_file = '../database/market/%s_OKEX.csv' % symbol
+            stock_data_file = '../database/market/%s_OKEX_HOURS.csv' % symbol
         try:
             stock_df = pd.read_csv(stock_data_file)
         except Exception as e:
-            print(symbol)
+            print(symbol, e)
             continue
 
         # 筛选字段
@@ -121,14 +128,15 @@ def get_stock_df_dict(N, M):
         stock_df = stock_df.assign(date=pd.to_datetime(stock_df['date']))
 
         # 用日期作索引，日期升序排序
-        if symbol in NASDAQ100 or symbol in CRYPTOCURRENCY:
+        if symbol in NASDAQ100 or symbol in CRYPTOCURRENCYSYMBOL:
             stock_df = stock_df[::-1]
         stock_df.set_index(['date'], inplace=True)
-        stock_df.index = stock_df.index.to_period('D')
+        # stock_df.index = stock_df.index.to_period('D')
+        stock_df.index = stock_df.index.to_period('H')
 
         # 计算每天涨跌幅
         # stock_df['o_pct_chg'] = stock_df.open.pct_change(1)
-        stock_df['c_o_pct_chg'] = (stock_df.open - stock_df.close.shift(1)) / stock_df.close.shift(1)
+        # stock_df['c_o_pct_chg'] = (stock_df.open - stock_df.close.shift(1)) / stock_df.close.shift(1)
         # stock_df['N_chg'] = stock_df.open.pct_change(N)
         # 特殊处理，用昨天收盘价做判定
         stock_df['N_chg'] = (stock_df.close.shift(1) - stock_df.close.shift(N)) / stock_df.close.shift(N)
@@ -171,7 +179,8 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
         run_start_day = start_date
 
     # 时间序列
-    for today in pd.period_range(start=run_start_day, end=end_date, freq='D'):
+    # for today in pd.period_range(start=run_start_day, end=end_date, freq='D'):
+    for today in pd.period_range(start=run_start_day, end=end_date, freq='H'):
         count_day += 1
         is_change = True
         buy_reason = ''
@@ -246,10 +255,6 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
             # 停牌了/数据出错了，今天卖不了了，完了
             if today not in stock_df_dict[holding_symbol].index:
                 continue
-            # 跌停板，卖不掉，其实基本不可能，因为是指数ETF轮动
-            if today_market.c_o_pct_chg < -0.1 and holding_symbol not in CRYPTOCURRENCY:
-                print(today, holding_symbol, '跌停板，卖不掉')
-                continue
             CASH += cur_order.buy_count * today_market.open
             idx = cur_order.name
             order_df.loc[idx, 'sell_date'] = today
@@ -276,11 +281,6 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
 
             # 停牌了/数据出错了，今天卖不了了，完了
             if today not in stock_df_dict[target_symbol].index:
-                continue
-
-            # 涨停板，买不进，其实基本不可能，因为是指数ETF轮动
-            if today_market.c_o_pct_chg > 0.1 and holding_symbol not in CRYPTOCURRENCY:
-                print(today, target_symbol, '涨停板，买不进')
                 continue
 
             buy_price = today_market.open
@@ -472,10 +472,10 @@ def work2(pos, n):
 def main():
     s_type = ['ETF_ROTATION']
     pos_list = [1]
-    n_list = list(range(1, 41))
+    n_list = list(range(1, 2))
     k_list = [0, 1, 2, 3, 4, 5, 6, 7]
     k_list = [0]
-    m_list = list(range(1, 41))
+    m_list = list(range(1, 31))
 
     print(s_type)
     print(pos_list)
@@ -499,7 +499,7 @@ def main():
 if __name__ == '__main__':
     set_log(INFO)
     main()
-    # PARAMS, score_sr, order_df = work(('ETF_ROTATION', 1, 13, 0, 13))
+    # PARAMS, score_sr, order_df = work(('ETF_ROTATION', 1, 10, 0, 30))
     # print(PARAMS)
     # print(score_sr)
     # print(order_df)
