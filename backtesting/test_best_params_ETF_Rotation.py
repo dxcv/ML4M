@@ -40,19 +40,21 @@ CRYPTOCURRENCYSYMBOL = CONF['CRYPTOCURRENCYSYMBOL']
 BENCHMARK = '399300'
 ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
 ROTATION_LIST = ['399300', '000905', '399006', '000012']
+ROTATION_LIST = ['399300', '399006', '513100', '518880', '000012']
+ROTATION_LIST = ['399300', '399006', '162411', '518880', '513500', '000012']
 SAFE = '000012'
 
-BENCHMARK = 'BITCOIN'
-ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
-ROTATION_LIST = ['BITCOIN', 'EOS', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
-SAFE = ''
+# BENCHMARK = 'BITCOIN'
+# ROTATION_LIST = ['BITCOIN', 'EOS', 'TETHER', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
+# ROTATION_LIST = ['BITCOIN', 'EOS', 'ETHEREUM', 'RIPPLE', 'LITECOIN']
+# SAFE = ''
 
-BENCHMARK = 'BTC'
-ROTATION_LIST = ['BTC', 'EOS', 'ETH', 'XRP', 'LTC']
-SAFE = ''
+# BENCHMARK = 'BTC'
+# ROTATION_LIST = ['BTC', 'EOS', 'ETH', 'XRP', 'LTC']
+# SAFE = ''
 
 ### 时间设置
-start_date = '2019-04-01'
+start_date = '2014-01-01'
 # end_date = '2019-06-01'
 end_date = time.strftime('%Y-%m-%d')
 
@@ -472,7 +474,7 @@ def work2(pos, n):
 def main():
     s_type = ['ETF_ROTATION']
     pos_list = [1]
-    n_list = list(range(1, 2))
+    n_list = list(range(1, 31))
     k_list = [0, 1, 2, 3, 4, 5, 6, 7]
     k_list = [0]
     m_list = list(range(1, 31))
