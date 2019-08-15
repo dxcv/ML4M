@@ -38,9 +38,11 @@ CRYPTOCURRENCY = list(CRYPTOCURRENCY.keys())
 CRYPTOCURRENCYSYMBOL = CONF['CRYPTOCURRENCYSYMBOL']
 
 BENCHMARK = '399300'
-ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
+ROTATION_LIST = ['399300', '399006', '000012']
 ROTATION_LIST = ['399300', '000905', '399006', '000012']
-ROTATION_LIST = ['399300', '399006', '513100', '518880', '000012']
+ROTATION_LIST = ['399300', '162411', '399006', '000012']
+# ROTATION_LIST = ['399300', '000016', '000905', '399006', '000012']
+# ROTATION_LIST = ['399300', '399006', '513100', '518880', '000012']
 ROTATION_LIST = ['399300', '399006', '162411', '518880', '513500', '000012']
 SAFE = '000012'
 
@@ -54,9 +56,9 @@ SAFE = '000012'
 # SAFE = ''
 
 ### 时间设置
-start_date = '2014-01-01'
-# end_date = '2019-06-01'
-end_date = time.strftime('%Y-%m-%d')
+start_date = '2015-01-01'
+end_date = '2019-08-01'
+# end_date = time.strftime('%Y-%m-%d')
 
 ### ETF Rotation System
 POS = 1
@@ -133,8 +135,8 @@ def get_stock_df_dict(N, M):
         if symbol in NASDAQ100 or symbol in CRYPTOCURRENCYSYMBOL:
             stock_df = stock_df[::-1]
         stock_df.set_index(['date'], inplace=True)
-        # stock_df.index = stock_df.index.to_period('D')
-        stock_df.index = stock_df.index.to_period('H')
+        stock_df.index = stock_df.index.to_period('D')
+        # stock_df.index = stock_df.index.to_period('H')
 
         # 计算每天涨跌幅
         # stock_df['o_pct_chg'] = stock_df.open.pct_change(1)
@@ -181,8 +183,8 @@ def run_turtle(ROTATION_LIST, stock_df_dict, STRATEGY, POS, N, K, M):
         run_start_day = start_date
 
     # 时间序列
-    # for today in pd.period_range(start=run_start_day, end=end_date, freq='D'):
-    for today in pd.period_range(start=run_start_day, end=end_date, freq='H'):
+    for today in pd.period_range(start=run_start_day, end=end_date, freq='D'):
+    # for today in pd.period_range(start=run_start_day, end=end_date, freq='H'):
         count_day += 1
         is_change = True
         buy_reason = ''
@@ -495,6 +497,7 @@ def main():
     print(score_df.loc[:, ['POS', 'N', 'K', 'M', 'RETURN_ALGO', 'RETURN_BENC', 'MAXDROPDOWN_ALGO', 'MAXDROPDOWN_BENC', 'WINRATE_ORDER', 'WINRATE_YEARLY']])
     print(score_df.describe())
     csv_file = '../database/%s.csv' % time.strftime('%Y%m%d-%H%M%S')
+    csv_file = '../database/ETFROTATION-%s-%s-%s-%s.csv' % (''.join(ROTATION_LIST), start_date, end_date, time.strftime('%Y%m%d%H%M%S'))
     score_df.to_csv(csv_file, index=False)
 
 
